@@ -44,7 +44,7 @@ std::vector<std::vector<std::string>> Parse(const char* filename)
     // End READ FILE
 
     // Start LEXER
-    std::vector<std::vector<std::string>> tokenized_lines;
+    std::vector<std::vector<std::string>> tokenizedLines;
     std::vector<std::string> tokens;
     for (const std::string& li : lines)
     {
@@ -73,12 +73,12 @@ std::vector<std::vector<std::string>> Parse(const char* filename)
             }
         }
         tokens.push_back(tempStr);
-        tokenized_lines.push_back(tokens);
+        tokenizedLines.push_back(tokens);
     }
     // End LEXER
 
     // TODO(hans): add types for tokens
-    return tokenized_lines;
+    return tokenizedLines;
 }
 
 // Token types
