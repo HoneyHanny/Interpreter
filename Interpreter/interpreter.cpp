@@ -50,19 +50,19 @@ std::vector<std::vector<std::string>> Parse(const char* filename)
     {
         const char* chars = li.c_str();
         std::string temp_str = "";
-        int quote_count = 0;
-        bool in_quotes;
+        int quoteCount = 2;
+        bool inQuotes;
         tokens.clear();
         for (int i = 0; chars[i] != '\0'; i++)
         {
             if (chars[i] == '"' || chars[i] == '\'')
-                quote_count++;
-            if (quote_count % 2 == 0)
-                in_quotes = false;
+                quoteCount++;
+            if (quoteCount % 2 == 0)
+                inQuotes = false;
             else
-                in_quotes = true;
+                inQuotes = true;
 
-            if (chars[i] == ' ' && !in_quotes)
+            if (chars[i] == ' ' && !inQuotes)
             {
                 tokens.push_back(temp_str);
                 temp_str = "";
