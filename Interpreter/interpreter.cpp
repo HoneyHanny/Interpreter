@@ -77,9 +77,11 @@ std::vector<std::vector<std::string>> Parse(const char* filename)
     }
     // End LEXER
 
+    // TODO(hans): add types for tokens
     return tokenized_lines;
 }
 
+// Token types
 // String - " "
 // Char - ' '
 // Symbol - print function var
