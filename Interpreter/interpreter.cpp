@@ -49,7 +49,7 @@ std::vector<std::vector<std::string>> Parse(const char* filename)
     for (const std::string& li : lines)
     {
         const char* chars = li.c_str();
-        std::string temp_str = "";
+        std::string tempStr = "";
         int quoteCount = 2;
         bool inQuotes;
         tokens.clear();
@@ -64,15 +64,15 @@ std::vector<std::vector<std::string>> Parse(const char* filename)
 
             if (chars[i] == ' ' && !inQuotes)
             {
-                tokens.push_back(temp_str);
-                temp_str = "";
+                tokens.push_back(tempStr);
+                tempStr = "";
             }
             else
             {
-                temp_str += chars[i];
+                tempStr += chars[i];
             }
         }
-        tokens.push_back(temp_str);
+        tokens.push_back(tempStr);
         tokenized_lines.push_back(tokens);
     }
     // End LEXER
