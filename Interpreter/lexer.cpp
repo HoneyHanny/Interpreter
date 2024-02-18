@@ -26,6 +26,30 @@ Token Lexer::NextToken() {
     case '=':
         tok = { ASSIGN, std::string(1, ch) };
         break;
+    case '+':
+        tok = { PLUS, std::string(1, ch) };
+        break;
+    case '-':
+        tok = { MINUS, std::string(1, ch) };
+        break;
+    case '*':
+        tok = { ASTERISK, std::string(1, ch) };
+        break;
+    case '/':
+        tok = { SLASH, std::string(1, ch) };
+        break;
+    case '<':
+        tok = { LT, std::string(1, ch) };
+        break;
+    case '>':
+        tok = { GT, std::string(1, ch) };
+        break;
+    case ',':
+        tok = { COMMA, std::string(1, ch) };
+        break;
+    case ':':
+        tok = { COLON, std::string(1, ch) };
+        break;
     case ';':
         tok = { SEMICOLON, std::string(1, ch) };
         break;
@@ -35,17 +59,35 @@ Token Lexer::NextToken() {
     case ')':
         tok = { RPAREN, std::string(1, ch) };
         break;
-    case ',':
-        tok = { COMMA, std::string(1, ch) };
-        break;
-    case '+':
-        tok = { PLUS, std::string(1, ch) };
-        break;
     case '{':
         tok = { LBRACE, std::string(1, ch) };
         break;
     case '}':
         tok = { RBRACE, std::string(1, ch) };
+        break;
+    case '[':
+        tok = { LSQBRACE, std::string(1, ch) };
+        break;
+    case ']':
+        tok = { RSQBRACE, std::string(1, ch) };
+        break;
+    case '#':
+        tok = { HASH, std::string(1, ch) };
+        break;
+    case '.':
+        tok = { DOT, std::string(1, ch) };
+        break;
+    case '\'':
+        tok = { S_QUOTE, std::string(1, ch) };
+        break;
+    case '"':
+        tok = { D_QUOTE, std::string(1, ch) };
+        break;
+    case '$':
+        tok = { DOLLAR_SIGN, std::string(1, ch) };
+        break;
+    case '&':
+        tok = { AMPERSAND, std::string(1, ch) };
         break;
     case 0: // End of file / input
         tok.Type = EOF_TOKEN;
@@ -59,8 +101,8 @@ Token Lexer::NextToken() {
         }
         else if (isDigit(ch)) {
             tok.Literal = readNumber();
-            tok.Type = INT; // Use INT type for numbers
-            return tok; // Early return for numbers
+            tok.Type = NUM; // Use INT type for numbers
+            return tok;
         }
         else {
             tok = { ILLEGAL, std::string(1, ch) };
@@ -74,9 +116,17 @@ Token Lexer::NextToken() {
 // Private function definitions
 std::string Lexer::readIdentifier() {
     int startPosition = position;
-    while (isLetter(ch)) {
+
+    // Verify if the first index is a letter
+    if (isLetter(ch)) {
         readChar();
     }
+
+    // Continue reading
+    while (isLetter(ch) || isDigit(ch)) {
+        readChar();
+    }
+
     return std::string(input.substr(startPosition, position - startPosition));
 }
 
@@ -86,11 +136,11 @@ void Lexer::skipWhitespace() {
     }
 }
 
-std::string_view Lexer::lookupIdent(const std::string & ident) { // Implement lookupIdent here to distinguish between keywords and identifiers
-    // Example implementation
-    if (ident == "fn") return FUNCTION;
-    if (ident == "let") return LET;
-    // Add more keywords as needed
+TokenType Lexer::lookupIdent(const std::string& ident) { 
+    auto it = keywords.find(ident);
+    if (it != keywords.end()) {
+        return it->second;
+    }
     return IDENT;
 }
 

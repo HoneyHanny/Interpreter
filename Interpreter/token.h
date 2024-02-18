@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <string_view>
+#include <unordered_map>
 
 // Token Type Definition
 using TokenType = std::string_view;
@@ -12,25 +13,56 @@ struct Token {
 
 // Token Value Definitions
 // Special Identifiers
-constexpr std::string_view ILLEGAL = "ILLEGAL";
-constexpr std::string_view EOF_TOKEN = "EOF"; // EOF is a macro in C++, so we use EOF_TOKEN
-
-// Identifiers + literals
-constexpr std::string_view IDENT = "IDENT"; // varName, foobar, x, y, ...
-constexpr std::string_view INT = "INT"; // 1343456
+constexpr TokenType ILLEGAL = "ILLEGAL";
+constexpr TokenType EOF_TOKEN = "EOF"; // EOF is a macro in C++, so we use EOF_TOKEN
 
 // Operators
-constexpr std::string_view ASSIGN = "=";
-constexpr std::string_view PLUS = "+";
+constexpr TokenType ASSIGN = "=";
+constexpr TokenType PLUS = "+";
+constexpr TokenType MINUS = "-";
+constexpr TokenType ASTERISK = "*";
+constexpr TokenType SLASH = "/";
+
+constexpr TokenType LT = "<";
+constexpr TokenType GT = ">";
+
 
 // Delimiters
-constexpr std::string_view COMMA = ",";
-constexpr std::string_view SEMICOLON = ";";
-constexpr std::string_view LPAREN = "(";
-constexpr std::string_view RPAREN = ")";
-constexpr std::string_view LBRACE = "{";
-constexpr std::string_view RBRACE = "}";
+constexpr TokenType COMMA = ",";
+constexpr TokenType COLON = ":";
+constexpr TokenType SEMICOLON = ";";
+constexpr TokenType LPAREN = "(";
+constexpr TokenType RPAREN = ")";
+constexpr TokenType LBRACE = "{";
+constexpr TokenType RBRACE = "}";
+constexpr TokenType LSQBRACE = "[";
+constexpr TokenType RSQBRACE = "]";
+constexpr TokenType HASH = "#";
+constexpr TokenType DOT = ".";
+constexpr TokenType S_QUOTE = "'";
+constexpr TokenType D_QUOTE = "\"";
+constexpr TokenType DOLLAR_SIGN = "$";
+constexpr TokenType AMPERSAND = "&";
+
+// Identifiers + literals
+constexpr TokenType IDENT = "IDENT"; // varName, foobar, x, y, ...
+constexpr TokenType NUM = "NUM"; // 0123456789
 
 // Keywords
-constexpr std::string_view FUNCTION = "FUNCTION";
-constexpr std::string_view LET = "LET";
+constexpr TokenType INT = "INT";
+constexpr TokenType CHAR = "CHAR";
+constexpr TokenType BOOL = "BOOL";
+constexpr TokenType FLOAT = "FLOAT";
+
+constexpr TokenType FUNCTION = "FUNCTION";
+constexpr TokenType BEGIN = "BEGIN";
+constexpr TokenType END = "END";
+constexpr TokenType CODE = "CODE";
+constexpr TokenType TRUE = "TRUE";
+constexpr TokenType FALSE = "FALSE";
+constexpr TokenType IF = "IF";
+constexpr TokenType ELSE = "ELSE";
+constexpr TokenType DISPLAY = "DISPLAY";
+
+extern std::unordered_map<std::string, std::string_view> keywords;
+
