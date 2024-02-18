@@ -1,21 +1,15 @@
 #include <iostream>
-
-#include "interpreter.h"
+//#include <vector>
+//#include <string>
+#include "lexer_test.h"
 
 int main(int argc, char* argv[])
 {
-    std::vector<std::vector<std::string>> lines = Parse(argv[1]);
+    std::cout << "Test 1: " << std::endl;
+    TestNextToken();
 
-    for (int i = 0; i < lines.size(); i++)
-    {
-        std::cout << "Line " << i + 1 << ": ";
-        for (int j = 0; j < lines.at(i).size(); j++)
-        {
-            std::cout << "[" << lines.at(i).at(j) << "], ";
-        }
-        std::cout << "\n";
-    }
-
+    std::cout << "Test 2: " << std::endl;
+    TestNextToken2();
     return 0;
 }
 
