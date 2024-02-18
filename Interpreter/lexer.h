@@ -16,13 +16,14 @@ private:
     int readPosition;  // Current reading position in input (after current char)
     char ch;           // Current char under examination
 
-    std::string readIdentifier();
-    void skipWhitespace();
-    std::string_view lookupIdent(const std::string& ident);
-    std::string readNumber();
+    std::string readIdentifier(); // Check if keyword or identifier
+    std::string readNumber(); // Check if number
+    void skipWhitespace(); // Skips whitespace in code
+    TokenType lookupIdent(const std::string& ident); // Distinguishes between keywords and identifiers
 
     static bool isLetter(char ch) {
-        return std::isalpha(ch) || ch == '_';
+        return std::isalpha(ch)
+            || ch == '_';
     }
 
     static bool isDigit(char ch) {

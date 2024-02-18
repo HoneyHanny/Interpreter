@@ -3,7 +3,7 @@
 #include "Lexer_test.h"
 #include "Lexer.h"
 
-static void assertEqual(const std::string_view& actual, const std::string_view& expected, const std::string& message) {
+static void assertEqual(const TokenType& actual, const TokenType& expected, const std::string& message) {
     if (actual != expected) {
         std::cerr << " Assertion failed: " << message << "\n"
             << "Expected: " << expected << ", Actual: " << actual << std::endl;
@@ -39,55 +39,88 @@ void TestNextToken() {
 }
 
 void TestNextToken2() {
-    std::string input = R"(let five = 5;
-let ten = 10;
-
-let add = fn(x, y) {
-	x + y;
-};
-
-let result = add(five, ten);
+    std::string input = R"(
+# this is a sample program in CODE
+BEGIN CODE
+    INT x, y, z = 5
+    CHAR a_1 = 'n'
+    BOOL t = "TRUE"
+    x = y = 4 
+    a_1 = 'c' 
+    # this is a comment 
+    DISPLAY: x & t & z & $ & a_1 & [#] & "last"
+END CODE
 )";
 
     Lexer l(input);
 
     std::vector<std::pair<TokenType, std::string>> tests = {
-        {LET, "let"},
-        {IDENT, "five"},
-        {ASSIGN, "="},
-        {INT, "5"},
-        {SEMICOLON, ";"},
-        {LET, "let"},
-        {IDENT, "ten"},
-        {ASSIGN, "="},
-        {INT, "10"},
-        {SEMICOLON, ";"},
-        {LET, "let"},
-        {IDENT, "add"},
-        {ASSIGN, "="},
-        {FUNCTION, "fn"},
-        {LPAREN, "("},
+        {HASH, "#"},
+        {IDENT, "this"},
+        {IDENT, "is"},
+        {IDENT, "a"},
+        {IDENT, "sample"},
+        {IDENT, "program"},
+        {IDENT, "in"},
+        {CODE, "CODE"},
+        {BEGIN, "BEGIN"},
+        {CODE, "CODE"},
+        {INT, "INT"},
         {IDENT, "x"},
         {COMMA, ","},
         {IDENT, "y"},
-        {RPAREN, ")"},
-        {LBRACE, "{"},
-        {IDENT, "x"},
-        {PLUS, "+"},
-        {IDENT, "y"},
-        {SEMICOLON, ";"},
-        {RBRACE, "}"},
-        {SEMICOLON, ";"},
-        {LET, "let"},
-        {IDENT, "result"},
-        {ASSIGN, "="},
-        {IDENT, "add"},
-        {LPAREN, "("},
-        {IDENT, "five"},
         {COMMA, ","},
-        {IDENT, "ten"},
-        {RPAREN, ")"},
-        {SEMICOLON, ";"},
+        {IDENT, "z"},
+        {ASSIGN, "="},
+        {NUM, "5"},
+        {CHAR, "CHAR"},
+        {IDENT, "a_1"},
+        {ASSIGN, "="},
+        {S_QUOTE, "'"},
+        {IDENT, "n"},
+        {S_QUOTE, "'"},
+        {BOOL, "BOOL"},
+        {IDENT, "t"},
+        {ASSIGN, "="},
+        {D_QUOTE, "\""},
+        {TRUE, "TRUE"},
+        {D_QUOTE, "\""},
+        {IDENT, "x"},
+        {ASSIGN, "="},
+        {IDENT, "y"},
+        {ASSIGN, "="},
+        {NUM, "4"},
+        {IDENT, "a_1"},
+        {ASSIGN, "="},
+        {S_QUOTE, "'"},
+        {IDENT, "c"},
+        {S_QUOTE, "'"},
+        {HASH, "#"},
+        {IDENT, "this"},
+        {IDENT, "is"},
+        {IDENT, "a"},
+        {IDENT, "comment"},
+        {DISPLAY, "DISPLAY"},
+        {COLON, ":"},
+        {IDENT, "x"},
+        {AMPERSAND, "&"},
+        {IDENT, "t"},
+        {AMPERSAND, "&"},
+        {IDENT, "z"},
+        {AMPERSAND, "&"},
+        {DOLLAR_SIGN, "$"},
+        {AMPERSAND, "&"},
+        {IDENT, "a_1"},
+        {AMPERSAND, "&"},
+        {LSQBRACE, "["},
+        {HASH, "#"},
+        {RSQBRACE, "]"},
+        {AMPERSAND, "&"},
+        {D_QUOTE, "\""},
+        {IDENT, "last"},
+        {D_QUOTE, "\""},
+        {END, "END"},
+        {CODE, "CODE"},
         {EOF_TOKEN, ""},
     };
 
