@@ -2,8 +2,57 @@
 #include "lexer_test.h"
 #include "parser_test.h"
 #include "Repl.h"
+#include <string.h>
+#include <string>
+#include <vector>
+
+static void displayHelp() {
+    // TODO(hans): Print more help
+    static bool done = false;
+    if (!done) {
+        std::cout << " Help:" << std::endl;
+        std::cout << " Github: https://github.com/HoneyHanny/Interpreter" << std::endl;
+        std::cout << " Usage: code <filename|flags> " << std::endl;
+        std::cout << " -h | --help : Display help" << std::endl;
+        std::cout << " -v | --verbose : Display verbose" << std::endl;
+        done = true;
+    }
+}
+
+static void displayVerbose() {
+    // TODO(hans): implement verbose
+    static bool done = false;
+    if (!done) {
+        std::cerr << "Verbose not implemented" << std::endl;
+        done = true;
+    }
+}
 
 int main(int argc, char* argv[]) {
+
+    std::vector<std::string> files;
+
+    // Process command arguments
+    for (int i = 1; i < argc; i++) {
+        if (argv[i][0] == '-') { // Compiler flag
+            // Help flag
+            if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
+                displayHelp();
+            }
+            // Verbose flag
+            if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose")) {
+                displayVerbose();
+            }
+        } else { // File input
+            // NOTE(hans): Assume only one file for now
+            files.push_back(std::string(argv[i]));
+            if (files.size() > 1) {
+                std::cerr << "Please input only 1 file" << std::endl;
+                return EXIT_FAILURE;
+            }
+        }
+    }
+
     // Testing for tokenizer - uncomment to test tokenizer or add more test cases at lexer_test
     /*std::cout << "Test 1: " << std::endl;
     TestNextToken();
@@ -17,12 +66,15 @@ int main(int argc, char* argv[]) {
     // Testing for parser - uncomment to test parser or add more test cases at parser_test
     TestTypedDeclStatements();
 
-    if (argc == 1) { // No files specified run repl
+    if (files.size() == 0) { // No files specified run repl
         std::cout << "Hello! This is the CODE programming language!\n";
         std::cout << "Feel free to type in commands\n";
 
         Repl repl;
         repl.Start(std::cin, std::cout);
+    } else { // Input files specified interpret source code
+        // TODO(hans): Read and process file
+        std::cerr << "File input not implemented" << std::endl;
     }
     //} else { // Input files specified interpret source code
     //    std::cout << "Not implemented" << std::endl;
