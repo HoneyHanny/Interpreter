@@ -7,6 +7,7 @@ public:
     Lexer(const std::string& input); 
 
     void readChar(); // Reads the next character and advances the position
+    char peekChar(); // Retrieves the next character in advance without incrementing the position (for ==, <>, etc..)
     Token NextToken(); // Tokenizer
 
 

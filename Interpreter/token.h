@@ -26,6 +26,10 @@ constexpr TokenType SLASH = "/";
 constexpr TokenType LT = "<";
 constexpr TokenType GT = ">";
 
+constexpr TokenType EQ = "==";
+constexpr TokenType NEQ = "<>";
+constexpr TokenType LEQT = "<=";
+constexpr TokenType GEQT = ">=";
 
 // Delimiters
 constexpr TokenType COMMA = ",";

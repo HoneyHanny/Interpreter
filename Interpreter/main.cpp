@@ -9,6 +9,9 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Test 2: " << std::endl;
     TestNextToken2();
+
+    std::cout << "Test 3: " << std::endl;
+    TestNextToken3();
     return 0;
 }
 

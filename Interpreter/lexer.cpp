@@ -6,6 +6,8 @@ Lexer::Lexer(const std::string& input)
 }
 
 // Public function definitions
+
+// Reads the next character and advances the position
 void Lexer::readChar() {
     if (readPosition >= input.size()) {
         ch = 0; // Use 0 as EOF marker
@@ -15,8 +17,19 @@ void Lexer::readChar() {
     }
     position = readPosition;
     ++readPosition;
-}   
+}
 
+// Retrieves the next character in advance without incrementing the position (for ==, <>, etc..)
+char Lexer::peekChar() {
+    if (readPosition >= static_cast<int>(input.size())) {
+        return '\0';
+    }
+    else {
+        return input[readPosition];
+    }
+}
+
+// Tokenizer
 Token Lexer::NextToken() {
     Token tok;
 
@@ -24,7 +37,14 @@ Token Lexer::NextToken() {
 
     switch (ch) {
     case '=':
-        tok = { ASSIGN, std::string(1, ch) };
+        if (peekChar() == '=') {
+            readChar();
+            tok.Type = EQ; 
+            tok.Literal = "==";
+        }
+        else {
+            tok = { ASSIGN, std::string(1, ch) };
+        }
         break;
     case '+':
         tok = { PLUS, std::string(1, ch) };
@@ -39,10 +59,29 @@ Token Lexer::NextToken() {
         tok = { SLASH, std::string(1, ch) };
         break;
     case '<':
-        tok = { LT, std::string(1, ch) };
+        if (peekChar() == '>') {
+            readChar();
+            tok.Type = NEQ;
+            tok.Literal = "<>";
+        }
+        else if (peekChar() == '=') {
+            readChar();
+            tok.Type = LEQT;
+            tok.Literal = "<=";
+        }
+        else {
+            tok = { LT, std::string(1, ch) };
+        }
         break;
     case '>':
-        tok = { GT, std::string(1, ch) };
+        if (peekChar() == '=') {
+            readChar();
+            tok.Type = GEQT;
+            tok.Literal = ">=";
+        }
+        else {
+            tok = { GT, std::string(1, ch) };
+        }
         break;
     case ',':
         tok = { COMMA, std::string(1, ch) };
@@ -114,6 +153,8 @@ Token Lexer::NextToken() {
 }
 
 // Private function definitions
+
+// Check if keyword or identifier
 std::string Lexer::readIdentifier() {
     int startPosition = position;
 
@@ -130,12 +171,14 @@ std::string Lexer::readIdentifier() {
     return std::string(input.substr(startPosition, position - startPosition));
 }
 
+// Skips whitespace in code
 void Lexer::skipWhitespace() {
     while (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') {
         readChar();
     }
 }
 
+// Distinguishes between keywords and identifiers
 TokenType Lexer::lookupIdent(const std::string& ident) { 
     auto it = keywords.find(ident);
     if (it != keywords.end()) {
@@ -144,6 +187,7 @@ TokenType Lexer::lookupIdent(const std::string& ident) {
     return IDENT;
 }
 
+// Check if number
 std::string Lexer::readNumber() {
     int startPosition = position;
     while (isDigit(ch)) {
