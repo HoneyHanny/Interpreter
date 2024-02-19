@@ -32,11 +32,15 @@ std::unique_ptr<Statement> Parser::parseStatement() {
         || curToken.Type == FLOAT) {
         return parseTypedDeclStatement();
     }
+    else if (curToken.Type == RETURN) {
+        return parseReturnStatement();
+    }
     else {
         return nullptr;
     }
 }
 
+// Subtree structure: <TYPE> <IDENT> <ASSIGN> <EXPRESSION>
 std::unique_ptr<TypedDeclStatement> Parser::parseTypedDeclStatement() {
     auto stmt = std::make_unique<TypedDeclStatement>(curToken);
 
@@ -49,6 +53,20 @@ std::unique_ptr<TypedDeclStatement> Parser::parseTypedDeclStatement() {
     if (!expectPeek(ASSIGN)) {
         return nullptr;
     }
+
+    // TODO: We're skipping the expressions until we encounter a newline or EOF
+    while (!curTokenIs(NEWLINE) && !curTokenIs(EOF_TOKEN)) {
+        nextToken();
+    }
+
+    return stmt;
+}
+
+// Subtree structure: <RETURN> <EXPRESSION>
+std::unique_ptr<ReturnStatement> Parser::parseReturnStatement() {
+    auto stmt = std::make_unique<ReturnStatement>(curToken);
+
+    nextToken();
 
     // TODO: We're skipping the expressions until we encounter a newline or EOF
     while (!curTokenIs(NEWLINE) && !curTokenIs(EOF_TOKEN)) {

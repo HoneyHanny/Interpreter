@@ -64,6 +64,7 @@ constexpr TokenType FALSE = "FALSE";
 constexpr TokenType IF = "IF";
 constexpr TokenType ELSE = "ELSE";
 constexpr TokenType DISPLAY = "DISPLAY";
+constexpr TokenType RETURN = "RETURN";
 
 // Types
 constexpr TokenType INT = "INT";

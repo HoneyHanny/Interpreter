@@ -32,9 +32,9 @@ bool testTypedDeclStatement(Statement* s, const std::string& name);
 
 void TestTypedDeclStatements() {
     std::string input = R"(
-INT x 5
-FLOAT = 10
-CHAR 10
+INT x = 5
+FLOAT y = 10
+CHAR foobar = 10
 )";
         
 
@@ -86,3 +86,58 @@ bool testTypedDeclStatement(Statement* s, const std::string& name) {
     return true;
 }
 
+
+bool testReturnStatement(Statement* s, const std::string& name);
+
+void TestReturnStatements() {
+    std::string input = R"(
+RETURN 5
+RETURN 10
+RETURN 99999
+)";
+
+
+    auto lexer = std::make_unique<Lexer>(input);
+    Parser parser(std::move(lexer));
+
+    auto program = parser.ParseProgram();
+    if (program == nullptr) {
+        std::cerr << "ParseProgram() returned nullptr" << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    checkParserErrors(parser);
+
+    if (program->Statements.size() != 3) {
+        std::cerr << "program.Statements does not contain 3 statements. got=" << program->Statements.size() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    std::vector<std::string> tests = { "x", "y", "foobar" };
+
+    for (size_t i = 0; i < tests.size(); ++i) {
+        if (!testReturnStatement(program->Statements[i].get(), tests[i])) {
+            std::exit(EXIT_FAILURE);
+        }
+    }
+
+
+    std::cout << "All tests passed!" << std::endl;
+
+}
+
+bool testReturnStatement(Statement* s, const std::string& name) {
+    std::string tokenLiteral = s->TokenLiteral();
+    if (tokenLiteral != "RETURN") {
+        std::cerr << "s.TokenLiteral not RETURN'. got=" << tokenLiteral << std::endl;
+        return false;
+    }
+
+    ReturnStatement* returnStmt = dynamic_cast<ReturnStatement*>(s);
+    if (returnStmt == nullptr) {
+        std::cerr << "s not ReturnStatement. got=" << typeid(*s).name() << std::endl;
+        return false;
+    }
+
+    return true;
+}

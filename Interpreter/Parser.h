@@ -12,6 +12,7 @@ public:
     std::unique_ptr<Program> ParseProgram();
     std::unique_ptr<Statement> parseStatement();
     std::unique_ptr<TypedDeclStatement> parseTypedDeclStatement();
+    std::unique_ptr<ReturnStatement> parseReturnStatement();
 
     bool curTokenIs(const TokenType& t) const;
     bool peekTokenIs(const TokenType& t) const;

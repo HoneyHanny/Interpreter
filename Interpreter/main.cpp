@@ -65,6 +65,7 @@ int main(int argc, char* argv[]) {
 
     // Testing for parser - uncomment to test parser or add more test cases at parser_test
     TestTypedDeclStatements();
+    TestReturnStatements();
 
     if (files.size() == 0) { // No files specified run repl
         std::cout << "Hello! This is the CODE programming language!\n";
@@ -76,9 +77,6 @@ int main(int argc, char* argv[]) {
         // TODO(hans): Read and process file
         std::cerr << "File input not implemented" << std::endl;
     }
-    //} else { // Input files specified interpret source code
-    //    std::cout << "Not implemented" << std::endl;
-    //}
 
     return 0;
 }

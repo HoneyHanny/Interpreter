@@ -44,12 +44,12 @@ public:
     std::string TokenLiteral() const override { return token.Literal; }
 };
 
-
+// Subtree structure: <TYPE> <IDENT> <ASSIGN> <EXPRESSION>
 class TypedDeclStatement : public Statement {
 public:
-    Token token;
-    std::shared_ptr<Identifier> Name;
-    std::shared_ptr<Expression> Value;
+    Token token; // <TYPE>
+    std::shared_ptr<Identifier> Name; // <IDENT>
+    std::shared_ptr<Expression> Value; // <EXPRESSION>
 
     TypedDeclStatement(const Token& token)
         : token(token) {}
@@ -58,3 +58,15 @@ public:
     std::string TokenLiteral() const override { return token.Literal; }
 };
 
+// Subtree structure: <RETURN> <EXPRESSION>
+class ReturnStatement : public Statement {
+public:
+    Token token; // <RETURN>
+    std::shared_ptr<Expression> ReturnValue; // <EXPRESSION>
+
+    ReturnStatement(const Token& token)
+        : token(token) {}
+
+    void statementNode() override {}
+    std::string TokenLiteral() const override { return token.Literal; }
+};

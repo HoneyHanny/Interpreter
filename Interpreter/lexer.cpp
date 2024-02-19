@@ -143,7 +143,7 @@ Token Lexer::NextToken() {
         }
         else if (isDigit(ch)) {
             tok.Literal = readNumber();
-            tok.Type = NUM; // Use INT type for numbers
+            tok.Type = NUM; 
             return tok;
         }
         else {
