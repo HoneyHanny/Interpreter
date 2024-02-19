@@ -1,9 +1,10 @@
 #include <iostream>
 #include "lexer_test.h"
+#include "parser_test.h"
 #include "Repl.h"
 
 int main(int argc, char* argv[]) {
-    // Testing - uncomment to test tokenizer or add more test cases at lexer_test
+    // Testing for tokenizer - uncomment to test tokenizer or add more test cases at lexer_test
     /*std::cout << "Test 1: " << std::endl;
     TestNextToken();
 
@@ -12,6 +13,9 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Test 3: " << std::endl;
     TestNextToken3();*/
+
+    // Testing for parser - uncomment to test parser or add more test cases at parser_test
+    TestTypedDeclStatements();
 
     if (argc == 1) { // No files specified run repl
         std::cout << "Hello! This is the CODE programming language!\n";

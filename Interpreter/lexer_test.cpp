@@ -12,7 +12,10 @@ static void assertEqual(const TokenType& actual, const TokenType& expected, cons
 }
 
 void TestNextToken() {
-    std::string input = "=+(){},;";
+    std::string input = 
+R"(=+(){},;
+    test
+)";
     Lexer l(input);
 
     std::vector<std::pair<TokenType, std::string>> tests = {
@@ -24,6 +27,9 @@ void TestNextToken() {
         {RBRACE, "}"},
         {COMMA, ","},
         {SEMICOLON, ";"},
+        {NEWLINE, "\n"},
+        {IDENT, "test"},
+        {NEWLINE, "\n"},
         {EOF_TOKEN, ""}, 
     };
 
@@ -55,6 +61,7 @@ END CODE
     Lexer l(input);
 
     std::vector<std::pair<TokenType, std::string>> tests = {
+        {NEWLINE, "\n"},
         {HASH, "#"},
         {IDENT, "this"},
         {IDENT, "is"},
@@ -63,8 +70,10 @@ END CODE
         {IDENT, "program"},
         {IDENT, "in"},
         {CODE, "CODE"},
+        {NEWLINE, "\n"},
         {BEGIN, "BEGIN"},
         {CODE, "CODE"},
+        {NEWLINE, "\n"},
         {INT, "INT"},
         {IDENT, "x"},
         {COMMA, ","},
@@ -73,33 +82,39 @@ END CODE
         {IDENT, "z"},
         {ASSIGN, "="},
         {NUM, "5"},
+        {NEWLINE, "\n"},
         {CHAR, "CHAR"},
         {IDENT, "a_1"},
         {ASSIGN, "="},
         {S_QUOTE, "'"},
         {IDENT, "n"},
         {S_QUOTE, "'"},
+        {NEWLINE, "\n"},
         {BOOL, "BOOL"},
         {IDENT, "t"},
         {ASSIGN, "="},
         {D_QUOTE, "\""},
         {TRUE, "TRUE"},
         {D_QUOTE, "\""},
+        {NEWLINE, "\n"},
         {IDENT, "x"},
         {ASSIGN, "="},
         {IDENT, "y"},
         {ASSIGN, "="},
         {NUM, "4"},
+        {NEWLINE, "\n"},
         {IDENT, "a_1"},
         {ASSIGN, "="},
         {S_QUOTE, "'"},
         {IDENT, "c"},
         {S_QUOTE, "'"},
+        {NEWLINE, "\n"},
         {HASH, "#"},
         {IDENT, "this"},
         {IDENT, "is"},
         {IDENT, "a"},
         {IDENT, "comment"},
+        {NEWLINE, "\n"},
         {DISPLAY, "DISPLAY"},
         {COLON, ":"},
         {IDENT, "x"},
@@ -119,8 +134,10 @@ END CODE
         {D_QUOTE, "\""},
         {IDENT, "last"},
         {D_QUOTE, "\""},
+        {NEWLINE, "\n"},
         {END, "END"},
         {CODE, "CODE"},
+        {NEWLINE, "\n"},
         {EOF_TOKEN, ""},
     };
 

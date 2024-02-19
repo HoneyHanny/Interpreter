@@ -128,6 +128,9 @@ Token Lexer::NextToken() {
     case '&':
         tok = { AMPERSAND, std::string(1, ch) };
         break;
+    case '\n':
+        tok = { NEWLINE, std::string(1, ch) };
+        break;
     case 0: // End of file / input
         tok.Type = EOF_TOKEN;
         tok.Literal = "";
@@ -173,7 +176,11 @@ std::string Lexer::readIdentifier() {
 
 // Skips whitespace in code
 void Lexer::skipWhitespace() {
-    while (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') {
+    while (ch == ' ' 
+        //|| ch == '\t' 
+        //|| ch == '\n' 
+        //|| ch == '\r' // Commented out to treat newlines as a token by the Lexer
+) {
         readChar();
     }
 }

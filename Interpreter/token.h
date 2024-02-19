@@ -47,6 +47,7 @@ constexpr TokenType S_QUOTE = "'";
 constexpr TokenType D_QUOTE = "\"";
 constexpr TokenType DOLLAR_SIGN = "$";
 constexpr TokenType AMPERSAND = "&";
+constexpr TokenType NEWLINE = "\n";
 
 // Identifiers 
 constexpr TokenType IDENT = "IDENT"; // varName, foobar, x, y, ...
