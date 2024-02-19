@@ -1,6 +1,7 @@
 #include <iostream>
 #include "lexer_test.h"
 #include "parser_test.h"
+#include "ast_test.h"
 #include "Repl.h"
 #include <string.h>
 #include <string>
@@ -64,8 +65,12 @@ int main(int argc, char* argv[]) {
     TestNextToken3();*/
 
     // Testing for parser - uncomment to test parser or add more test cases at parser_test
-    TestTypedDeclStatements();
-    TestReturnStatements();
+    //TestTypedDeclStatements();
+    //TestReturnStatements();
+    TestIdentifierExpression();
+
+    // Testing for AST - uncomment to test parser or add more test cases at ast_test
+    //TestString();
 
     if (files.size() == 0) { // No files specified run repl
         std::cout << "Hello! This is the CODE programming language!\n";

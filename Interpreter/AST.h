@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <sstream>
 #include <vector>
 #include <memory>
 #include "Token.h"
@@ -8,6 +9,7 @@ class Node {
 public:
     virtual ~Node() = default;
     virtual std::string TokenLiteral() const = 0;
+    virtual std::string String() const = 0;
 };
 
 class Statement : public Node {
@@ -30,6 +32,16 @@ public:
         }
         return "";
     }
+
+    std::string String() const override {
+        std::ostringstream out;
+
+        for (const auto& s : Statements) {
+            out << s->String();
+        }
+
+        return out.str();
+    }
 };
 
 class Identifier : public Expression {
@@ -39,6 +51,8 @@ public:
 
     Identifier(const Token& token, const std::string& value)
         : token(token), Value(value) {}
+
+    std::string String() const override { return Value; }
 
     void expressionNode() override {}
     std::string TokenLiteral() const override { return token.Literal; }
@@ -53,6 +67,24 @@ public:
 
     TypedDeclStatement(const Token& token)
         : token(token) {}
+    
+    // Testing constructor. Do not use in actual Parser.
+    TypedDeclStatement(const Token& token, std::shared_ptr<Identifier> name, std::shared_ptr<Identifier> value)
+        : token(token), Name(std::move(name)), Value(std::move(value)) {}
+
+    std::string String() const override {
+        std::ostringstream out;
+
+        out << TokenLiteral() << " ";
+        out << Name->String(); 
+        out << " = ";
+
+        if (Value != nullptr) {
+            out << Value->String();
+        }
+
+        return out.str();
+    }
 
     void statementNode() override {}
     std::string TokenLiteral() const override { return token.Literal; }
@@ -66,6 +98,44 @@ public:
 
     ReturnStatement(const Token& token)
         : token(token) {}
+
+    std::string String() const override {
+        std::ostringstream out;
+
+        out << TokenLiteral() << " ";
+
+        if (ReturnValue != nullptr) {
+            out << ReturnValue->String();
+        }
+
+        return out.str();
+    }
+
+    void statementNode() override {}
+    std::string TokenLiteral() const override { return token.Literal; }
+};
+
+// Subtree structure: <EXPRESSION>
+class ExpressionStatement : public Statement {
+public:
+    Token token; // <First token of the expression>
+    std::shared_ptr<Expression> Expression; // <EXPRESSION>
+
+    ExpressionStatement(const Token& token)
+        : token(token) {}
+
+    std::string String() const override {
+        std::ostringstream out;
+
+        if (Expression != nullptr) {
+            out << Expression->String();
+        }
+        else {
+            out << "";
+        }
+
+        return out.str();
+    }
 
     void statementNode() override {}
     std::string TokenLiteral() const override { return token.Literal; }

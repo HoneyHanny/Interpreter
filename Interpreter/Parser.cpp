@@ -4,6 +4,9 @@
 Parser::Parser(std::unique_ptr<Lexer> lexer) : lexer(std::move(lexer)) {
     nextToken();
     nextToken();
+
+    // Setup the prefix parse functions
+    setupPrefixParseFns();
 }
 
 void Parser::nextToken() {
@@ -26,18 +29,22 @@ std::unique_ptr<Program> Parser::ParseProgram() {
 }
 
 std::unique_ptr<Statement> Parser::parseStatement() {
+    // Typed Declaration Statements
     if (curToken.Type == INT 
         || curToken.Type == CHAR 
         || curToken.Type == BOOL
         || curToken.Type == FLOAT) {
         return parseTypedDeclStatement();
     }
+    // Return Statements
     else if (curToken.Type == RETURN) {
         return parseReturnStatement();
     }
-    else {
-        return nullptr;
+    // Expression Statements
+    else if (curToken.Type != NEWLINE){
+        return parseExpressionStatement();
     }
+    return nullptr;
 }
 
 // Subtree structure: <TYPE> <IDENT> <ASSIGN> <EXPRESSION>
@@ -76,6 +83,36 @@ std::unique_ptr<ReturnStatement> Parser::parseReturnStatement() {
     return stmt;
 }
 
+// Subtree structure: <EXPRESSION>
+std::unique_ptr<ExpressionStatement> Parser::parseExpressionStatement() {
+    auto stmt = std::make_unique<ExpressionStatement>(curToken);
+
+    stmt->Expression = parseExpression(Precedence::LOWEST);
+
+    if (peekTokenIs(SEMICOLON)) {
+        nextToken();
+    }
+
+    return stmt;
+}
+
+std::unique_ptr<Expression> Parser::parseExpression(Precedence precedence) {
+    auto prefixIt = prefixParseFns.find(curToken.Type);
+    if (prefixIt == prefixParseFns.end()) {
+        // No parsing function found for the current token type, handle error.
+        return nullptr;
+    }
+
+    auto& prefixFn = prefixIt->second;
+    std::unique_ptr<Expression> leftExp = prefixFn();
+
+    return leftExp;
+}
+
+std::unique_ptr<Expression> Parser::parseIdentifier() {
+    return std::make_unique<Identifier>(curToken, curToken.Literal);
+}
+
 bool Parser::curTokenIs(const TokenType& t) const {
     return curToken.Type == t;
 }
@@ -103,4 +140,12 @@ void Parser::peekError(const TokenType& expected) {
     std::string msg = "Expected next token to be " + std::string(expected) +
         ", got " + std::string(peekToken.Type) + " instead.";
     errors.push_back(msg);
+}
+
+void Parser::registerPrefix(TokenType type, prefixParseFn fn) {
+    prefixParseFns[type] = fn;
+}
+
+void Parser::registerInfix(TokenType type, infixParseFn fn) {
+    infixParseFns[type] = fn;
 }

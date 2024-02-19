@@ -127,6 +127,7 @@ RETURN 99999
 }
 
 bool testReturnStatement(Statement* s, const std::string& name) {
+    std::cerr << s->String() << std::endl;
     std::string tokenLiteral = s->TokenLiteral();
     if (tokenLiteral != "RETURN") {
         std::cerr << "s.TokenLiteral not RETURN'. got=" << tokenLiteral << std::endl;
@@ -140,4 +141,48 @@ bool testReturnStatement(Statement* s, const std::string& name) {
     }
 
     return true;
+}
+
+void TestIdentifierExpression() {
+    std::string input = "foobar";
+    auto lexer = std::make_unique<Lexer>(input);
+    Parser parser(std::move(lexer));
+
+    auto program = parser.ParseProgram();
+    if (program == nullptr) {
+        std::cerr << "ParseProgram() returned nullptr" << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    checkParserErrors(parser); 
+
+    if (program->Statements.size() != 1) {
+        std::cerr << "program has not enough statements. got=" << program->Statements.size() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
+    std::cerr << stmt->String() << std::endl;
+    if (!stmt) {
+        std::cerr << "program.Statements[0] is not ExpressionStatement." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto ident = dynamic_cast<Identifier*>(stmt->Expression.get());
+    if (!ident) {
+        std::cerr << "exp not Identifier." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (ident->Value != "foobar") {
+        std::cerr << "ident.Value not 'foobar'. got=" << ident->Value << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (ident->TokenLiteral() != "foobar") {
+        std::cerr << "ident.TokenLiteral not 'foobar'. got=" << ident->TokenLiteral() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    std::cout << "TestIdentifierExpression passed." << std::endl;
 }
