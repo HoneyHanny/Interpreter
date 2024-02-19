@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include "Lexer_test.h"
-#include "Lexer.h"
+#include "../Lexer.h"
 
 static void assertEqual(const TokenType& actual, const TokenType& expected, const std::string& message) {
     if (actual != expected) {

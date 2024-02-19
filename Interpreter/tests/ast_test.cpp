@@ -1,7 +1,7 @@
 #include "ast_test.h"
 
 #include <iostream>
-#include "AST.h" // Assuming this contains the Program, TypedDeclStatement, and Identifier class definitions.
+#include "../AST.h" 
 
 void TestString() {
     // Create a program with one TypedDeclStatement

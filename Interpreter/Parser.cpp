@@ -1,14 +1,6 @@
 #include "Parser.h"
 #include <iostream>
 
-Parser::Parser(std::unique_ptr<Lexer> lexer) : lexer(std::move(lexer)) {
-    nextToken();
-    nextToken();
-
-    // Setup the prefix parse functions
-    setupPrefixParseFns();
-}
-
 void Parser::nextToken() {
     curToken = peekToken;
     peekToken = lexer->NextToken();
@@ -109,9 +101,31 @@ std::unique_ptr<Expression> Parser::parseExpression(Precedence precedence) {
     return leftExp;
 }
 
+// Prefix parsers
+
 std::unique_ptr<Expression> Parser::parseIdentifier() {
     return std::make_unique<Identifier>(curToken, curToken.Literal);
 }
+
+std::unique_ptr<Expression> Parser::parseNumericalLiteral() {
+    auto lit = std::make_unique<IntegerLiteral>(curToken);
+
+    char* end;
+    // strtol can convert a string to a long int, considering the base
+    long int value = std::strtol(curToken.Literal.c_str(), &end, 10); // Using base 10 for conversion
+
+    if (*end != '\0') { // Check if the entire string was converted
+        std::string msg = "could not parse " + curToken.Literal + " as integer";
+        errors.push_back(msg);
+        return nullptr;
+    }
+
+    lit->Value = value;
+
+    return lit;
+}
+
+// Helper functions
 
 bool Parser::curTokenIs(const TokenType& t) const {
     return curToken.Type == t;

@@ -128,22 +128,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ast_test.cpp" />
+    <ClCompile Include="tests\ast_test.cpp" />
     <ClCompile Include="Lexer.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="lexer_test.cpp" />
+    <ClCompile Include="tests\lexer_test.cpp" />
     <ClCompile Include="Parser.cpp" />
-    <ClCompile Include="parser_test.cpp" />
+    <ClCompile Include="tests\parser_test.cpp" />
     <ClCompile Include="Repl.cpp" />
     <ClCompile Include="Token.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AST.h" />
-    <ClInclude Include="ast_test.h" />
-    <ClInclude Include="lexer_test.h" />
+    <ClInclude Include="tests\ast_test.h" />
+    <ClInclude Include="tests\lexer_test.h" />
     <ClInclude Include="Lexer.h" />
     <ClInclude Include="Parser.h" />
-    <ClInclude Include="parser_test.h" />
+    <ClInclude Include="tests\parser_test.h" />
     <ClInclude Include="Repl.h" />
     <ClInclude Include="Token.h" />
   </ItemGroup>

@@ -115,7 +115,7 @@ public:
     std::string TokenLiteral() const override { return token.Literal; }
 };
 
-// Subtree structure: <EXPRESSION>
+// Subtree structure: <EXPRESSION> ... <EXPRESSION> 
 class ExpressionStatement : public Statement {
 public:
     Token token; // <First token of the expression>
@@ -138,5 +138,20 @@ public:
     }
 
     void statementNode() override {}
+    std::string TokenLiteral() const override { return token.Literal; }
+};
+
+// Subtree structure: <EXPRESSION>
+class IntegerLiteral : public Expression {
+public:
+    Token token; 
+    int Value = 0; //  Default value = 0;
+
+    IntegerLiteral(const Token& token)
+        : token(token) {}
+
+    std::string String() const override { return token.Literal; }
+
+    void expressionNode() override {}
     std::string TokenLiteral() const override { return token.Literal; }
 };

@@ -2,8 +2,8 @@
 
 #include <iostream>
 #include <cstdlib>
-#include "Parser.h"
-#include "Lexer.h"
+#include "../Parser.h"
+#include "../Lexer.h"
 #include <memory> 
 
 static void assertEqual(const std::string& actual, const std::string& expected, const std::string& message) {
@@ -162,7 +162,6 @@ void TestIdentifierExpression() {
     }
 
     auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
-    std::cerr << stmt->String() << std::endl;
     if (!stmt) {
         std::cerr << "program.Statements[0] is not ExpressionStatement." << std::endl;
         std::exit(EXIT_FAILURE);
@@ -185,4 +184,47 @@ void TestIdentifierExpression() {
     }
 
     std::cout << "TestIdentifierExpression passed." << std::endl;
+}
+
+void TestIntegerLiteralExpression() {
+    std::string input = "5";
+    auto lexer = std::make_unique<Lexer>(input);
+    Parser parser(std::move(lexer));
+
+    auto program = parser.ParseProgram();
+    if (program == nullptr) {
+        std::cerr << "ParseProgram() returned nullptr" << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    checkParserErrors(parser);
+
+    if (program->Statements.size() != 1) {
+        std::cerr << "TestIntegerLiteralExpression failed: program has not enough statements. got=" << program->Statements.size() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
+    if (!stmt) {
+        std::cerr << "TestIntegerLiteralExpression failed: program.Statements[0] is not ExpressionStatement." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto literal = dynamic_cast<IntegerLiteral*>(stmt->Expression.get());
+    if (!literal) {
+        std::cerr << "TestIntegerLiteralExpression failed: exp not IntegerLiteral." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (literal->Value != 5) {
+        std::cerr << "TestIntegerLiteralExpression failed: literal.Value not 5. got=" << literal->Value << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (literal->TokenLiteral() != "5") {
+        std::cerr << "TestIntegerLiteralExpression failed: literal.TokenLiteral not '5'. got=" << literal->TokenLiteral() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    std::cout << "TestIntegerLiteralExpression passed." << std::endl;
 }

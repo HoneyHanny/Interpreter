@@ -22,7 +22,13 @@ using infixParseFn = std::function<std::unique_ptr<Expression>(std::unique_ptr<E
 
 class Parser {
 public:
-    Parser(std::unique_ptr<Lexer> lexer);
+    Parser(std::unique_ptr<Lexer> lexer) : lexer(std::move(lexer)) {
+        // Call nextToken twice to initialize currToken and peekToken
+        nextToken();
+        nextToken();
+
+        setupPrefixParseFns();
+    }
 
     std::unique_ptr<Program> ParseProgram();
     std::unique_ptr<Statement> parseStatement();
@@ -32,6 +38,7 @@ public:
 
     std::unique_ptr<Expression> parseExpression(Precedence precedence);
     std::unique_ptr<Expression> parseIdentifier();
+    std::unique_ptr<Expression> parseNumericalLiteral();
 
     bool curTokenIs(const TokenType& t) const;
     bool peekTokenIs(const TokenType& t) const;
@@ -46,14 +53,6 @@ public:
     void registerPrefix(TokenType type, prefixParseFn fn);
     void registerInfix(TokenType type, infixParseFn fn);
 
-    void setupPrefixParseFns() {
-        // Registering the parseIdentifier function for IDENT tokens
-        registerPrefix(IDENT, [this]() -> std::unique_ptr<Expression> {
-            return this->parseIdentifier();
-        });
-
-        // Add more registrations
-    }
 private:
     std::unique_ptr<Lexer> lexer; 
     std::vector<std::string> errors;
@@ -62,4 +61,16 @@ private:
 
 
     void nextToken();
+
+    // Setup the prefix parse functions
+    void setupPrefixParseFns() {
+        // Registering the parser functions for the tokens
+        registerPrefix(IDENT, [this]() -> std::unique_ptr<Expression> {
+            return this->parseIdentifier();
+        });
+
+        registerPrefix(NUM, [this]() -> std::unique_ptr<Expression> {
+            return this->parseNumericalLiteral();
+        });
+    }
 };

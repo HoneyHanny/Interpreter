@@ -1,7 +1,7 @@
 #include <iostream>
-#include "lexer_test.h"
-#include "parser_test.h"
-#include "ast_test.h"
+#include "tests/lexer_test.h"
+#include "tests/parser_test.h"
+#include "tests/ast_test.h"
 #include "Repl.h"
 #include <string.h>
 #include <string>
@@ -67,7 +67,8 @@ int main(int argc, char* argv[]) {
     // Testing for parser - uncomment to test parser or add more test cases at parser_test
     //TestTypedDeclStatements();
     //TestReturnStatements();
-    TestIdentifierExpression();
+    //TestIdentifierExpression();
+    TestIntegerLiteralExpression();
 
     // Testing for AST - uncomment to test parser or add more test cases at ast_test
     //TestString();

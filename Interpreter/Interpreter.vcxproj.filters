@@ -18,7 +18,7 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lexer_test.cpp">
+    <ClCompile Include="tests\lexer_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Lexer.cpp">
@@ -33,10 +33,10 @@
     <ClCompile Include="Parser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parser_test.cpp">
+    <ClCompile Include="tests\parser_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ast_test.cpp">
+    <ClCompile Include="tests\ast_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -47,7 +47,7 @@
     <ClInclude Include="Lexer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="lexer_test.h">
+    <ClInclude Include="tests\lexer_test.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Repl.h">
@@ -59,10 +59,10 @@
     <ClInclude Include="Parser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="parser_test.h">
+    <ClInclude Include="tests\parser_test.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ast_test.h">
+    <ClInclude Include="tests\ast_test.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
