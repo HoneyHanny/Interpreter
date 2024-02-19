@@ -142,12 +142,12 @@ public:
 };
 
 // Subtree structure: <EXPRESSION>
-class IntegerLiteral : public Expression {
+class NumericalLiteral : public Expression {
 public:
     Token token; 
     int Value = 0; //  Default value = 0;
 
-    IntegerLiteral(const Token& token)
+    NumericalLiteral(const Token& token)
         : token(token) {}
 
     std::string String() const override { return token.Literal; }

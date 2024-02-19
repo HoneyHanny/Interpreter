@@ -210,7 +210,7 @@ void TestIntegerLiteralExpression() {
         std::exit(EXIT_FAILURE);
     }
 
-    auto literal = dynamic_cast<IntegerLiteral*>(stmt->Expression.get());
+    auto literal = dynamic_cast<NumericalLiteral*>(stmt->Expression.get());
     if (!literal) {
         std::cerr << "TestIntegerLiteralExpression failed: exp not IntegerLiteral." << std::endl;
         std::exit(EXIT_FAILURE);

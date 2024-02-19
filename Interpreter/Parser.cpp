@@ -108,7 +108,7 @@ std::unique_ptr<Expression> Parser::parseIdentifier() {
 }
 
 std::unique_ptr<Expression> Parser::parseNumericalLiteral() {
-    auto lit = std::make_unique<IntegerLiteral>(curToken);
+    auto lit = std::make_unique<NumericalLiteral>(curToken);
 
     char* end;
     // strtol can convert a string to a long int, considering the base
