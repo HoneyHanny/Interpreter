@@ -13,18 +13,22 @@ int main(int argc, char* argv[]) {
     std::cout << "Test 3: " << std::endl;
     TestNextToken3();*/
 
-    std::cout << "Hello! This is the CODE programming language!\n";
-    std::cout << "Feel free to type in commands\n";
+    if (argc == 1) { // No files specified run repl
+        std::cout << "Hello! This is the CODE programming language!\n";
+        std::cout << "Feel free to type in commands\n";
 
-    Repl repl;
-    repl.Start(std::cin, std::cout);
+        Repl repl;
+        repl.Start(std::cin, std::cout);
+    } else { // Input files specified interpret source code
+        std::cout << "Not implemented" << std::endl;
+    }
 
     return 0;
 }
 
 // IMPORTANT DATES:
 //   Date   | Inc | Feature
-// ------------------------------
+// ---------|-----|--------------
 // March 28 |  2  | Basic
 // April 04 |  2  | Basic
 // April 11 |  3  | Basic
