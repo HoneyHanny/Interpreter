@@ -1,4 +1,5 @@
 #include "Parser.h"
+#include <iostream>
 
 Parser::Parser(std::unique_ptr<Lexer> lexer) : lexer(std::move(lexer)) {
     nextToken();
@@ -49,6 +50,7 @@ std::unique_ptr<TypedDeclStatement> Parser::parseTypedDeclStatement() {
         return nullptr;
     }
 
+    // TODO: We're skipping the expressions until we encounter a newline or EOF
     while (!curTokenIs(NEWLINE) && !curTokenIs(EOF_TOKEN)) {
         nextToken();
     }
@@ -70,6 +72,17 @@ bool Parser::expectPeek(const TokenType& t) {
         return true;
     }
     else {
+        peekError(t);
         return false;
     }
+}
+
+std::vector<std::string> Parser::Errors() const {
+    return errors;
+}
+
+void Parser::peekError(const TokenType& expected) {
+    std::string msg = "Expected next token to be " + std::string(expected) +
+        ", got " + std::string(peekToken.Type) + " instead.";
+    errors.push_back(msg);
 }

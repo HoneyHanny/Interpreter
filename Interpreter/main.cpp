@@ -23,9 +23,10 @@ int main(int argc, char* argv[]) {
 
         Repl repl;
         repl.Start(std::cin, std::cout);
-    } else { // Input files specified interpret source code
-        std::cout << "Not implemented" << std::endl;
     }
+    //} else { // Input files specified interpret source code
+    //    std::cout << "Not implemented" << std::endl;
+    //}
 
     return 0;
 }

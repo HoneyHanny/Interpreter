@@ -17,10 +17,14 @@ public:
     bool peekTokenIs(const TokenType& t) const;
     bool expectPeek(const TokenType& t);
 
+    std::vector<std::string> Errors() const;
+    void peekError(const TokenType& expected);
+
 private:
     std::unique_ptr<Lexer> lexer; 
     Token curToken;
     Token peekToken;
+    std::vector<std::string> errors;
 
     void nextToken();
 };

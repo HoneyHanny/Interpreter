@@ -14,25 +14,40 @@ static void assertEqual(const std::string& actual, const std::string& expected, 
     }
 }
 
+static void checkParserErrors(const Parser& parser) {
+    const auto& errors = parser.Errors();
+    if (errors.empty()) {
+        return;
+    }
+
+    std::cerr << "CODE - " << errors.size() << " error/s occured:" << std::endl;
+    for (const auto& msg : errors) {
+        std::cerr << "Error: " << msg << std::endl;
+    }
+
+    std::exit(EXIT_FAILURE);
+}
+
 bool testTypedDeclStatement(Statement* s, const std::string& name);
 
 void TestTypedDeclStatements() {
     std::string input = R"(
-INT x = 5
-FLOAT y = 10
-CHAR foobar = 838383
+INT x 5
+FLOAT = 10
+CHAR 10
 )";
         
 
     auto lexer = std::make_unique<Lexer>(input);
-    Parser p(std::move(lexer));
+    Parser parser(std::move(lexer));
 
-    auto program = p.ParseProgram();
+    auto program = parser.ParseProgram();
     if (program == nullptr) {
         std::cerr << "ParseProgram() returned nullptr" << std::endl;
         std::exit(EXIT_FAILURE);
     }
     
+    checkParserErrors(parser);
 
     if (program->Statements.size() != 3) {
         std::cerr << "program.Statements does not contain 3 statements. got=" << program->Statements.size() << std::endl;
@@ -47,7 +62,9 @@ CHAR foobar = 838383
         }
     }
 
+    
     std::cout << "All tests passed!" << std::endl;
+    
 }
 
 bool testTypedDeclStatement(Statement* s, const std::string& name) {
@@ -68,3 +85,4 @@ bool testTypedDeclStatement(Statement* s, const std::string& name) {
 
     return true;
 }
+
