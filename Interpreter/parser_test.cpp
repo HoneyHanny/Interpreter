@@ -6,7 +6,7 @@
 #include "Lexer.h"
 #include <memory> 
 
-void assertEqual(const std::string& actual, const std::string& expected, const std::string& message) {
+static void assertEqual(const std::string& actual, const std::string& expected, const std::string& message) {
     if (actual != expected) {
         std::cerr << "Assertion failed: " << message << "\n"
             << "Expected: " << expected << ", Actual: " << actual << std::endl;
@@ -18,9 +18,9 @@ bool testTypedDeclStatement(Statement* s, const std::string& name);
 
 void TestTypedDeclStatements() {
     std::string input = R"(
-INT x = 5;
-INT y = 10;
-INT foobar = 838383;
+INT x = 5
+FLOAT y = 10
+CHAR foobar = 838383
 )";
         
 
@@ -51,7 +51,11 @@ INT foobar = 838383;
 }
 
 bool testTypedDeclStatement(Statement* s, const std::string& name) {
-    assertEqual(s->TokenLiteral(), "INT", "s.TokenLiteral not 'INT'.");
+    std::string tokenLiteral = s->TokenLiteral();
+    if (tokenLiteral != "INT" && tokenLiteral != "FLOAT" && tokenLiteral != "BOOL" && tokenLiteral != "CHAR") {
+        std::cerr << "s.TokenLiteral not one of 'INT', 'FLOAT', 'BOOL', 'CHAR'. got=" << tokenLiteral << std::endl;
+        return false;
+    }
 
     TypedDeclStatement* typedDeclStmt = dynamic_cast<TypedDeclStatement*>(s);
     if (typedDeclStmt == nullptr) {

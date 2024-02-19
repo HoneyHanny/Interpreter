@@ -25,7 +25,10 @@ std::unique_ptr<Program> Parser::ParseProgram() {
 }
 
 std::unique_ptr<Statement> Parser::parseStatement() {
-    if (curToken.Type == INT) {
+    if (curToken.Type == INT 
+        || curToken.Type == CHAR 
+        || curToken.Type == BOOL
+        || curToken.Type == FLOAT) {
         return parseTypedDeclStatement();
     }
     else {
