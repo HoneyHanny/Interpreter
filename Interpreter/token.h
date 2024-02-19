@@ -48,16 +48,12 @@ constexpr TokenType D_QUOTE = "\"";
 constexpr TokenType DOLLAR_SIGN = "$";
 constexpr TokenType AMPERSAND = "&";
 
-// Identifiers + literals
+// Identifiers 
 constexpr TokenType IDENT = "IDENT"; // varName, foobar, x, y, ...
 constexpr TokenType NUM = "NUM"; // 0123456789
 
 // Keywords
-constexpr TokenType INT = "INT";
-constexpr TokenType CHAR = "CHAR";
-constexpr TokenType BOOL = "BOOL";
-constexpr TokenType FLOAT = "FLOAT";
-
+// Literals, Conditionals, etc...
 constexpr TokenType FUNCTION = "FUNCTION";
 constexpr TokenType BEGIN = "BEGIN";
 constexpr TokenType END = "END";
@@ -67,6 +63,12 @@ constexpr TokenType FALSE = "FALSE";
 constexpr TokenType IF = "IF";
 constexpr TokenType ELSE = "ELSE";
 constexpr TokenType DISPLAY = "DISPLAY";
+
+// Types
+constexpr TokenType INT = "INT";
+constexpr TokenType CHAR = "CHAR";
+constexpr TokenType BOOL = "BOOL";
+constexpr TokenType FLOAT = "FLOAT";
 
 extern std::unordered_map<std::string, std::string_view> keywords;
 

@@ -1,17 +1,24 @@
 #include <iostream>
-//#include <vector>
-//#include <string>
 #include "lexer_test.h"
+#include "Repl.h"
 
 int main(int argc, char* argv[]) {
-    std::cout << "Test 1: " << std::endl;
+    // Testing - uncomment to test tokenizer or add more test cases at lexer_test
+    /*std::cout << "Test 1: " << std::endl;
     TestNextToken();
 
     std::cout << "Test 2: " << std::endl;
     TestNextToken2();
 
     std::cout << "Test 3: " << std::endl;
-    TestNextToken3();
+    TestNextToken3();*/
+
+    std::cout << "Hello! This is the CODE programming language!\n";
+    std::cout << "Feel free to type in commands\n";
+
+    Repl repl;
+    repl.Start(std::cin, std::cout);
+
     return 0;
 }
 
