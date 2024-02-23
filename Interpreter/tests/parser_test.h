@@ -6,3 +6,4 @@ void TestIdentifierExpression();
 void TestIntegerLiteralExpression();
 void TestParsingPrefixExpressions();
 void TestParsingInfixExpressions();
+void TestOperatorPrecedenceParsing();

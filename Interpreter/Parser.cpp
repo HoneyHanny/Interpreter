@@ -98,6 +98,8 @@ std::unique_ptr<Expression> Parser::parseExpression(Precedence precedence) {
     auto& prefixFn = prefixIt->second;
     std::unique_ptr<Expression> leftExp = prefixFn();
 
+    // TODO: Handle explicitly forcing a new expression to be on a new line,
+    // current implementation doesn't handle this
     while (!peekTokenIs(NEWLINE) && precedence < peekPrecedence()) {
         auto infixIt = infixParseFns.find(peekToken.Type);
         if (infixIt == infixParseFns.end()) {

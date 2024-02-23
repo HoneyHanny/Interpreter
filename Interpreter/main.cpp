@@ -70,7 +70,8 @@ int main(int argc, char* argv[]) {
     //TestIdentifierExpression();
     //TestIntegerLiteralExpression();
     //TestParsingPrefixExpressions();
-    TestParsingInfixExpressions();
+    //TestParsingInfixExpressions();
+    TestOperatorPrecedenceParsing();
 
     // Testing for AST - uncomment to test parser or add more test cases at ast_test
     //TestString();

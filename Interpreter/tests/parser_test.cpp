@@ -348,3 +348,41 @@ void TestParsingInfixExpressions() {
 
     std::cout << "TestParsingInfixExpressions passed." << std::endl;
 }
+
+void TestOperatorPrecedenceParsing() {
+    struct TestCase {
+        std::string input;
+        std::string expected;
+    };
+
+    std::vector<TestCase> tests = {
+        {"-a * b", "((-a) * b)"},
+        {"!-a", "(!(-a))"},
+        {"a + b + c", "((a + b) + c)"},
+        {"a + b - c", "((a + b) - c)"},
+        {"a * b * c", "((a * b) * c)"},
+        {"a * b / c", "((a * b) / c)"},
+        {"a + b / c", "(a + (b / c))"},
+        {"a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"},
+        {"3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"},
+        {"5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"},
+        {"5 < 4 <> 3 > 4", "((5 < 4) <> (3 > 4))"},
+        {"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
+    };
+
+    for (const auto& test : tests) {
+        auto lexer = std::make_unique<Lexer>(test.input);
+        Parser parser(std::move(lexer));
+        auto program = parser.ParseProgram();
+        checkParserErrors(parser);
+
+        auto actual = program->String(); 
+        if (actual != test.expected) {
+            std::cerr << "TestOperatorPrecedenceParsing failed for input: " << test.input << "\n"
+                << "expected=" << test.expected << ", got=" << actual << std::endl;
+        }
+        else {
+            std::cout << "Test passed for: " << test.input << std::endl;
+        }
+    }
+}
