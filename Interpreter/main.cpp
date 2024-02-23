@@ -68,10 +68,11 @@ int main(int argc, char* argv[]) {
     //TestTypedDeclStatements();
     //TestReturnStatements();
     //TestIdentifierExpression();
-    //TestIntegerLiteralExpression();
+    //TestNumericalLiteralExpression();
     //TestParsingPrefixExpressions();
     //TestParsingInfixExpressions();
-    TestOperatorPrecedenceParsing();
+    //TestOperatorPrecedenceParsing();
+    TestBooleanExpression();
 
     // Testing for AST - uncomment to test parser or add more test cases at ast_test
     //TestString();

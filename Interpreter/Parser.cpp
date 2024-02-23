@@ -172,6 +172,10 @@ std::unique_ptr<Expression> Parser::parseInfixExpression(std::unique_ptr<Express
     return std::make_unique<InfixExpression>(token, std::move(left), op, std::move(right));
 }
 
+std::unique_ptr<Expression> Parser::parseBoolean() {
+    bool isTrue = curToken.Type == TRUE;
+    return std::make_unique<Boolean>(curToken, isTrue);
+}
 
 // Helper functions
 

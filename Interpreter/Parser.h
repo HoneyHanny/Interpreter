@@ -43,6 +43,7 @@ public:
     std::unique_ptr<Expression> parseNumericalLiteral();
     std::unique_ptr<Expression> parsePrefixExpression();
     std::unique_ptr<Expression> parseInfixExpression(std::unique_ptr<Expression> left);
+    std::unique_ptr<Expression> parseBoolean();
 
     // Helper functions
 
@@ -103,6 +104,15 @@ private:
         registerPrefix(MINUS, [this]() -> std::unique_ptr<Expression> {
             return this->parsePrefixExpression();
         });
+
+        registerPrefix(TRUE, [this]() -> std::unique_ptr<Expression> {
+            return this->parseBoolean();
+        });
+
+        registerPrefix(FALSE, [this]() -> std::unique_ptr<Expression> {
+            return this->parseBoolean();
+        });
+
     }
 
     void setupInfixParseFns() {

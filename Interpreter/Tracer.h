@@ -6,15 +6,20 @@
 class Tracer {
 public:
     static int indentLevel;
+    static bool trace;
 
     Tracer(const std::string& functionName) : funcName(functionName) {
-        printIndent("Entering " + funcName + "\n");
-        ++indentLevel; 
+        if (trace) {
+            printIndent("Entering " + funcName + "\n");
+            ++indentLevel; 
+        }
     }
 
     ~Tracer() {
-        --indentLevel; 
-        printIndent("Exiting " + funcName + "\n");
+        if (trace) {
+            --indentLevel; 
+            printIndent("Exiting " + funcName + "\n");
+        }
     }
 
 private:
@@ -26,4 +31,4 @@ private:
 };
 
 int Tracer::indentLevel = 0;
-
+bool Tracer::trace = false; // Set to true for test function tracing;

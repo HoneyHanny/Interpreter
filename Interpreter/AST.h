@@ -207,3 +207,25 @@ public:
 
     void expressionNode() override {}
 };
+
+class Boolean : public Expression {
+public:
+    Token token; 
+    bool Value = true; // Default value = true  
+
+    Boolean(const Token& token)
+        : token(token) {}
+
+    Boolean(const Token& token, bool value)
+        : token(token), Value(value) {}
+
+    void expressionNode() override {}
+
+    std::string TokenLiteral() const override {
+        return token.Literal;
+    }
+
+    std::string String() const override {
+        return token.Literal; 
+    }
+};
