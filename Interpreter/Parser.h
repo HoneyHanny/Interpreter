@@ -17,6 +17,7 @@ enum class Precedence : int {
 };
 
 
+
 using prefixParseFn = std::function<std::unique_ptr<Expression>()>;
 using infixParseFn = std::function<std::unique_ptr<Expression>(std::unique_ptr<Expression>)>;
 
@@ -28,6 +29,7 @@ public:
         nextToken();
 
         setupPrefixParseFns();
+        setupInfixParseFns();
     }
 
     std::unique_ptr<Program> ParseProgram();
@@ -39,13 +41,24 @@ public:
     std::unique_ptr<Expression> parseExpression(Precedence precedence);
     std::unique_ptr<Expression> parseIdentifier();
     std::unique_ptr<Expression> parseNumericalLiteral();
+    std::unique_ptr<Expression> parsePrefixExpression();
+    std::unique_ptr<Expression> parseInfixExpression(std::unique_ptr<Expression> left);
+
+    // Helper functions
 
     bool curTokenIs(const TokenType& t) const;
     bool peekTokenIs(const TokenType& t) const;
     bool expectPeek(const TokenType& t);
+    Precedence peekPrecedence() const;
+    Precedence curPrecedence() const;
+
+    // Error handling
 
     std::vector<std::string> Errors() const;
     void peekError(const TokenType& expected);
+    void noPrefixParseFnError(TokenType t);
+
+    // Token <--> Parser functions - mapping
 
     std::unordered_map<TokenType, prefixParseFn> prefixParseFns;
     std::unordered_map<TokenType, infixParseFn> infixParseFns;
@@ -53,6 +66,16 @@ public:
     void registerPrefix(TokenType type, prefixParseFn fn);
     void registerInfix(TokenType type, infixParseFn fn);
 
+    std::unordered_map<TokenType, Precedence> precedences = {
+        {EQ, Precedence::EQUALS},
+        {NEQ, Precedence::EQUALS},
+        {LT, Precedence::LESSGREATER},
+        {GT, Precedence::LESSGREATER},
+        {PLUS, Precedence::SUM},
+        {MINUS, Precedence::SUM},
+        {SLASH, Precedence::PRODUCT},
+        {ASTERISK, Precedence::PRODUCT},
+    };
 private:
     std::unique_ptr<Lexer> lexer; 
     std::vector<std::string> errors;
@@ -72,5 +95,41 @@ private:
         registerPrefix(NUM, [this]() -> std::unique_ptr<Expression> {
             return this->parseNumericalLiteral();
         });
+
+        registerPrefix(BANG, [this]() -> std::unique_ptr<Expression> {
+            return this->parsePrefixExpression();
+        });
+
+        registerPrefix(MINUS, [this]() -> std::unique_ptr<Expression> {
+            return this->parsePrefixExpression();
+        });
     }
+
+    void setupInfixParseFns() {
+        registerInfix(PLUS, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
+            return this->parseInfixExpression(std::move(left));
+            });
+        registerInfix(MINUS, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
+            return this->parseInfixExpression(std::move(left));
+            });
+        registerInfix(SLASH, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
+            return this->parseInfixExpression(std::move(left));
+            });
+        registerInfix(ASTERISK, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
+            return this->parseInfixExpression(std::move(left));
+            });
+        registerInfix(EQ, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
+            return this->parseInfixExpression(std::move(left));
+            });
+        registerInfix(NEQ, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
+            return this->parseInfixExpression(std::move(left));
+            });
+        registerInfix(LT, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
+            return this->parseInfixExpression(std::move(left));
+            });
+        registerInfix(GT, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
+            return this->parseInfixExpression(std::move(left));
+            });
+    }
+
 };

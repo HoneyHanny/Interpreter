@@ -24,7 +24,7 @@ public:
 
 class Program : public Node {
 public:
-    std::vector<std::shared_ptr<Statement>> Statements;
+    std::vector<std::unique_ptr<Statement>> Statements;
 
     std::string TokenLiteral() const override {
         if (!Statements.empty()) {
@@ -62,14 +62,14 @@ public:
 class TypedDeclStatement : public Statement {
 public:
     Token token; // <TYPE>
-    std::shared_ptr<Identifier> Name; // <IDENT>
-    std::shared_ptr<Expression> Value; // <EXPRESSION>
+    std::unique_ptr<Identifier> Name; // <IDENT>
+    std::unique_ptr<Expression> Value; // <EXPRESSION>
 
     TypedDeclStatement(const Token& token)
         : token(token) {}
     
     // Testing constructor. Do not use in actual Parser.
-    TypedDeclStatement(const Token& token, std::shared_ptr<Identifier> name, std::shared_ptr<Identifier> value)
+    TypedDeclStatement(const Token& token, std::unique_ptr<Identifier> name, std::unique_ptr<Identifier> value)
         : token(token), Name(std::move(name)), Value(std::move(value)) {}
 
     std::string String() const override {
@@ -94,7 +94,7 @@ public:
 class ReturnStatement : public Statement {
 public:
     Token token; // <RETURN>
-    std::shared_ptr<Expression> ReturnValue; // <EXPRESSION>
+    std::unique_ptr<Expression> ReturnValue; // <EXPRESSION>
 
     ReturnStatement(const Token& token)
         : token(token) {}
@@ -119,7 +119,7 @@ public:
 class ExpressionStatement : public Statement {
 public:
     Token token; // <First token of the expression>
-    std::shared_ptr<Expression> Expression; // <EXPRESSION>
+    std::unique_ptr<Expression> Expression; // <EXPRESSION>
 
     ExpressionStatement(const Token& token)
         : token(token) {}
@@ -154,4 +154,56 @@ public:
 
     void expressionNode() override {}
     std::string TokenLiteral() const override { return token.Literal; }
+};
+
+// Subtree structure: <prefix operator><EXPRESSION>;
+class PrefixExpression : public Expression {
+public:
+    Token token;
+    std::string Operator;
+    std::unique_ptr<Expression> Right;
+
+    PrefixExpression(const Token& token, const std::string Operator)
+        : token(token), Operator(Operator) {}
+
+    std::string String() const override {
+        std::ostringstream out;
+
+        out << "(";
+        out << Operator;
+        out << Right->String();
+        out << ")";
+
+        return out.str();
+    }
+
+    void expressionNode() override {}
+    std::string TokenLiteral() const override { return token.Literal; }
+};
+
+class InfixExpression : public Expression {
+public:
+    Token token;
+    std::unique_ptr<Expression> Left;
+    std::string Operator;
+    std::unique_ptr<Expression> Right;
+
+    InfixExpression(const Token& token, std::unique_ptr<Expression> left, const std::string& op, std::unique_ptr<Expression> right)
+        : token(token), Left(std::move(left)), Operator(op), Right(std::move(right)) {}
+
+    std::string TokenLiteral() const override {
+        return token.Literal;
+    }
+
+    std::string String() const override {
+        std::ostringstream out;
+        out << "(";
+        out << Left->String();
+        out << " " << Operator << " ";
+        out << Right->String();
+        out << ")";
+        return out.str();
+    }
+
+    void expressionNode() override {}
 };

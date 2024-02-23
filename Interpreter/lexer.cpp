@@ -58,6 +58,9 @@ Token Lexer::NextToken() {
     case '/':
         tok = { SLASH, std::string(1, ch) };
         break;
+    case '!':
+        tok = { BANG, std::string(1, ch) };
+        break;
     case '<':
         if (peekChar() == '>') {
             readChar();

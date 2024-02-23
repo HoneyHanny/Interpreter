@@ -22,6 +22,7 @@ constexpr TokenType PLUS = "+";
 constexpr TokenType MINUS = "-";
 constexpr TokenType ASTERISK = "*";
 constexpr TokenType SLASH = "/";
+constexpr TokenType BANG = "!";
 
 constexpr TokenType LT = "<";
 constexpr TokenType GT = ">";

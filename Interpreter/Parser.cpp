@@ -91,12 +91,24 @@ std::unique_ptr<ExpressionStatement> Parser::parseExpressionStatement() {
 std::unique_ptr<Expression> Parser::parseExpression(Precedence precedence) {
     auto prefixIt = prefixParseFns.find(curToken.Type);
     if (prefixIt == prefixParseFns.end()) {
-        // No parsing function found for the current token type, handle error.
+        noPrefixParseFnError(curToken.Type);
         return nullptr;
     }
 
     auto& prefixFn = prefixIt->second;
     std::unique_ptr<Expression> leftExp = prefixFn();
+
+    while (!peekTokenIs(NEWLINE) && precedence < peekPrecedence()) {
+        auto infixIt = infixParseFns.find(peekToken.Type);
+        if (infixIt == infixParseFns.end()) {
+            return leftExp;
+        }
+
+        auto& infixFn = infixIt->second;
+        nextToken();
+
+        leftExp = infixFn(std::move(leftExp));
+    }
 
     return leftExp;
 }
@@ -125,6 +137,29 @@ std::unique_ptr<Expression> Parser::parseNumericalLiteral() {
     return lit;
 }
 
+std::unique_ptr<Expression> Parser::parsePrefixExpression() {
+    auto expression = std::make_unique<PrefixExpression>(curToken, curToken.Literal);
+
+    nextToken();
+
+    expression->Right = parseExpression(Precedence::PREFIX);
+
+    return expression;
+}
+
+std::unique_ptr<Expression> Parser::parseInfixExpression(std::unique_ptr<Expression> left) {
+    auto token = curToken; // Copy current token (assuming Token is a lightweight object)
+    auto op = curToken.Literal;
+    auto precedence = curPrecedence();
+
+    nextToken(); // Move to the next token (the right-hand side expression)
+
+    auto right = parseExpression(precedence);
+
+    return std::make_unique<InfixExpression>(token, std::move(left), op, std::move(right));
+}
+
+
 // Helper functions
 
 bool Parser::curTokenIs(const TokenType& t) const {
@@ -146,6 +181,24 @@ bool Parser::expectPeek(const TokenType& t) {
     }
 }
 
+Precedence Parser::peekPrecedence() const {
+    auto it = precedences.find(peekToken.Type);
+    if (it != precedences.end()) {
+        return it->second;
+    }
+    return Precedence::LOWEST;
+}
+
+Precedence Parser::curPrecedence() const {
+    auto it = precedences.find(curToken.Type);
+    if (it != precedences.end()) {
+        return it->second;
+    }
+    return Precedence::LOWEST;
+}
+
+// Error handling
+
 std::vector<std::string> Parser::Errors() const {
     return errors;
 }
@@ -155,6 +208,13 @@ void Parser::peekError(const TokenType& expected) {
         ", got " + std::string(peekToken.Type) + " instead.";
     errors.push_back(msg);
 }
+
+void Parser::noPrefixParseFnError(TokenType t) {
+    std::string msg = "no prefix parse function for " + std::string(t) + " found";
+    errors.push_back(msg);
+}
+
+// Token <--> Parser functions - mapping
 
 void Parser::registerPrefix(TokenType type, prefixParseFn fn) {
     prefixParseFns[type] = fn;
