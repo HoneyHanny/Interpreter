@@ -1,4 +1,5 @@
 #include "Parser.h"
+#include "Tracer.h"
 #include <iostream>
 
 void Parser::nextToken() {
@@ -77,6 +78,8 @@ std::unique_ptr<ReturnStatement> Parser::parseReturnStatement() {
 
 // Subtree structure: <EXPRESSION>
 std::unique_ptr<ExpressionStatement> Parser::parseExpressionStatement() {
+    Tracer tracer("parseExpressionStatement");
+
     auto stmt = std::make_unique<ExpressionStatement>(curToken);
 
     stmt->Expression = parseExpression(Precedence::LOWEST);
@@ -89,6 +92,8 @@ std::unique_ptr<ExpressionStatement> Parser::parseExpressionStatement() {
 }
 
 std::unique_ptr<Expression> Parser::parseExpression(Precedence precedence) {
+    Tracer tracer("parseExpression");
+
     auto prefixIt = prefixParseFns.find(curToken.Type);
     if (prefixIt == prefixParseFns.end()) {
         noPrefixParseFnError(curToken.Type);
@@ -122,6 +127,8 @@ std::unique_ptr<Expression> Parser::parseIdentifier() {
 }
 
 std::unique_ptr<Expression> Parser::parseNumericalLiteral() {
+    Tracer tracer("parseNumericalLiteral");
+
     auto lit = std::make_unique<NumericalLiteral>(curToken);
 
     char* end;
@@ -140,6 +147,8 @@ std::unique_ptr<Expression> Parser::parseNumericalLiteral() {
 }
 
 std::unique_ptr<Expression> Parser::parsePrefixExpression() {
+    Tracer tracer("parsePrefixExpression");
+
     auto expression = std::make_unique<PrefixExpression>(curToken, curToken.Literal);
 
     nextToken();
@@ -150,8 +159,10 @@ std::unique_ptr<Expression> Parser::parsePrefixExpression() {
 }
 
 std::unique_ptr<Expression> Parser::parseInfixExpression(std::unique_ptr<Expression> left) {
-    auto token = curToken; // Copy current token (assuming Token is a lightweight object)
-    auto op = curToken.Literal;
+    Tracer tracer("parseInfixExpression");
+
+    Token token = curToken;
+    std::string op = curToken.Literal;
     auto precedence = curPrecedence();
 
     nextToken(); // Move to the next token (the right-hand side expression)

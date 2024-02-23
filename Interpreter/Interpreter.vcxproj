@@ -146,6 +146,7 @@
     <ClInclude Include="tests\parser_test.h" />
     <ClInclude Include="Repl.h" />
     <ClInclude Include="Token.h" />
+    <ClInclude Include="Tracer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="test.code" />

@@ -65,6 +65,9 @@
     <ClInclude Include="tests\ast_test.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Tracer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="test.code">
