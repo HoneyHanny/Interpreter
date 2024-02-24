@@ -1,6 +1,5 @@
 #include "Parser.h"
 #include "Tracer.h"
-#include <iostream>
 
 void Parser::nextToken() {
     curToken = peekToken;
@@ -8,6 +7,8 @@ void Parser::nextToken() {
 }   
 
 std::unique_ptr<Program> Parser::ParseProgram() {
+    Tracer tracer("parseProgram");
+
     auto program = std::make_unique<Program>();
 
     while (curToken.Type != EOF_TOKEN) {
@@ -22,6 +23,8 @@ std::unique_ptr<Program> Parser::ParseProgram() {
 }
 
 std::unique_ptr<Statement> Parser::parseStatement() {
+    Tracer tracer("parseStatement");
+
     // Typed Declaration Statements
     if (curToken.Type == INT 
         || curToken.Type == CHAR 
@@ -42,6 +45,8 @@ std::unique_ptr<Statement> Parser::parseStatement() {
 
 // Subtree structure: <TYPE> <IDENT> <ASSIGN> <EXPRESSION>
 std::unique_ptr<TypedDeclStatement> Parser::parseTypedDeclStatement() {
+    Tracer tracer("parseTypedDeclStatement");
+
     auto stmt = std::make_unique<TypedDeclStatement>(curToken);
 
     if (!expectPeek(IDENT)) {
@@ -64,6 +69,8 @@ std::unique_ptr<TypedDeclStatement> Parser::parseTypedDeclStatement() {
 
 // Subtree structure: <RETURN> <EXPRESSION>
 std::unique_ptr<ReturnStatement> Parser::parseReturnStatement() {
+    Tracer tracer("parseReturnStatement");
+
     auto stmt = std::make_unique<ReturnStatement>(curToken);
 
     nextToken();
@@ -89,6 +96,33 @@ std::unique_ptr<ExpressionStatement> Parser::parseExpressionStatement() {
     }
 
     return stmt;
+}
+
+std::unique_ptr<BlockStatement> Parser::parseBlockStatement() {
+    Tracer tracer("parseBlockStatement");
+
+    auto block = std::make_unique<BlockStatement>(curToken);
+    nextToken();
+
+    while (!(curTokenIs(END) 
+        && (peekTokenIs(IF) || peekTokenIs(ELSE))) // ... END (IF || ELSE)
+        && !curTokenIs(EOF_TOKEN)) { 
+        auto stmt = parseStatement();
+        if (stmt != nullptr) {
+            block->Statements.push_back(std::move(stmt));
+        }
+        nextToken();
+    }
+
+    if (curTokenIs(END)) { // Advance tokens by two to account for positioning. Adjust later if needed.
+        std::cout << "END TRIGGERED" << std::endl;
+        nextToken();
+        std::cout << "curToken: " << curToken.Literal << std::endl;
+        nextToken();
+        std::cout << "curToken: " << curToken.Literal << std::endl;
+    }
+
+    return block;
 }
 
 std::unique_ptr<Expression> Parser::parseExpression(Precedence precedence) {
@@ -123,6 +157,8 @@ std::unique_ptr<Expression> Parser::parseExpression(Precedence precedence) {
 // Prefix parsers
 
 std::unique_ptr<Expression> Parser::parseIdentifier() {
+    Tracer tracer("parseIdentifier");
+
     return std::make_unique<Identifier>(curToken, curToken.Literal);
 }
 
@@ -165,7 +201,7 @@ std::unique_ptr<Expression> Parser::parseInfixExpression(std::unique_ptr<Express
     std::string op = curToken.Literal;
     auto precedence = curPrecedence();
 
-    nextToken(); // Move to the next token (the right-hand side expression)
+    nextToken(); 
 
     auto right = parseExpression(precedence);
 
@@ -173,8 +209,115 @@ std::unique_ptr<Expression> Parser::parseInfixExpression(std::unique_ptr<Express
 }
 
 std::unique_ptr<Expression> Parser::parseBoolean() {
+    Tracer tracer("parseBoolean");
+
     bool isTrue = curToken.Type == TRUE;
     return std::make_unique<Boolean>(curToken, isTrue);
+}
+
+std::unique_ptr<Expression> Parser::parseGroupedExpression() {
+    Tracer tracer("parseGroupedExpression");
+
+    nextToken(); 
+
+    auto exp = parseExpression(Precedence::LOWEST);
+
+    if (!expectPeek(RPAREN)) {
+        return nullptr; 
+    }
+
+    return exp;
+}
+
+std::unique_ptr<Expression> Parser::parseIfExpression() {
+    Tracer tracer("parseIfExpression");
+
+    // Flag guards
+    if (!isFirstIfExpression) {
+        // Skip parsing this IF expression if it's done parsing the original expression.
+        std::cerr << "Skipping IF expression as it's not the first." << std::endl;
+        return nullptr;
+    }
+
+    if (!isFirstElseExpression) {
+        // Skip parsing this IF expression if it's done parsing the original expression.
+        std::cerr << "Skipping ELSE expression as it's not the first." << std::endl;
+        return nullptr;
+    }
+
+    isFirstIfExpression = false; // Set flag to false so that it skips other IFs
+
+    auto token = curToken; 
+    auto expression = std::make_unique<IfExpression>(token);
+
+    if (!expectPeek(LPAREN)) {
+        std::cerr << expression->TokenLiteral() << std::endl;
+        std::cerr << "Failed to find LPAREN, peekToken: " << peekToken.Type << std::endl;
+        return nullptr;
+    }
+
+    nextToken();
+    expression->Condition = parseExpression(Precedence::LOWEST);
+
+    if (!expectPeek(RPAREN)) {
+        std::cerr << expression->TokenLiteral() << std::endl;
+        std::cerr << "Failed to find RPAREN, peekToken: " << peekToken.Type << std::endl;
+        return nullptr;
+    }
+
+    if (!expectPeek(NEWLINE)) {
+        std::cerr << expression->TokenLiteral() << std::endl;
+        std::cerr << "Failed to find NEWLINE, peekToken: " << peekToken.Type << std::endl;
+        return nullptr;
+    }
+
+    if (!expectPeek(BEGIN)) {
+        std::cerr << expression->TokenLiteral() << std::endl;
+        std::cerr << "Failed to find BEGIN, peekToken: " << peekToken.Type << std::endl;
+        return nullptr;
+    }
+
+    if (!expectPeek(IF)) {
+        std::cerr << expression->TokenLiteral() << std::endl;
+        std::cerr << "Failed to find IF, peekToken: " << peekToken.Type << std::endl;
+        return nullptr;
+    }
+
+    expression->Consequence = parseBlockStatement();
+
+    // Check for an 'else' part
+    if (peekTokenIs(ELSE)) {
+
+        isFirstElseExpression = false; // Set flag to false so that it skips other ELSEs
+
+        nextToken();
+
+        if (!expectPeek(NEWLINE)) {
+            std::cerr << expression->TokenLiteral() << std::endl;
+            std::cerr << "Failed to find NEWLINE, peekToken: " << peekToken.Type << std::endl;
+            return nullptr;
+        }
+
+        if (!expectPeek(BEGIN)) {
+            std::cerr << expression->TokenLiteral() << std::endl;
+            std::cerr << "Failed to find BEGIN, peekToken: " << peekToken.Type << std::endl;
+            return nullptr;
+        }
+
+        if (!expectPeek(ELSE)) {
+            std::cerr << expression->TokenLiteral() << std::endl;
+            std::cerr << "Failed to find ELSE, peekToken: " << peekToken.Type << std::endl;
+            return nullptr;
+        }
+
+        expression->Alternative = parseBlockStatement();
+    }
+
+    // Set flags to true as it's done parsing the entire control flow.
+    isFirstIfExpression = true; 
+    isFirstElseExpression = true;
+
+    return expression;
 }
 
 // Helper functions
@@ -220,7 +363,7 @@ std::vector<std::string> Parser::Errors() const {
     return errors;
 }
 
-void Parser::peekError(const TokenType& expected) {
+void Parser::peekError(const TokenType& expected) { // Handle custom errors here
     std::string msg = "Expected next token to be " + std::string(expected) +
         ", got " + std::string(peekToken.Type) + " instead.";
     errors.push_back(msg);

@@ -2,6 +2,7 @@
 
 #include <memory> 
 #include <functional>
+#include <iostream>
 #include "Lexer.h" 
 #include "Token.h" 
 #include "AST.h"  
@@ -25,6 +26,8 @@ class Parser {
 public:
     Parser(std::unique_ptr<Lexer> lexer) : lexer(std::move(lexer)) {
         // Call nextToken twice to initialize currToken and peekToken
+        std::cout << "Initialize Parser" << curToken.Type << std::endl;
+
         nextToken();
         nextToken();
 
@@ -32,11 +35,15 @@ public:
         setupInfixParseFns();
     }
 
+    bool isFirstIfExpression = true; // Flag to handle multiple IF statements, as per CODE's specifications
+    bool isFirstElseExpression = true; // Flag to handle multiple ELSE statements, as per CODE's specifications
+
     std::unique_ptr<Program> ParseProgram();
     std::unique_ptr<Statement> parseStatement();
     std::unique_ptr<TypedDeclStatement> parseTypedDeclStatement();
     std::unique_ptr<ReturnStatement> parseReturnStatement();
     std::unique_ptr<ExpressionStatement> parseExpressionStatement();
+    std::unique_ptr<BlockStatement> parseBlockStatement();
 
     std::unique_ptr<Expression> parseExpression(Precedence precedence);
     std::unique_ptr<Expression> parseIdentifier();
@@ -44,6 +51,8 @@ public:
     std::unique_ptr<Expression> parsePrefixExpression();
     std::unique_ptr<Expression> parseInfixExpression(std::unique_ptr<Expression> left);
     std::unique_ptr<Expression> parseBoolean();
+    std::unique_ptr<Expression> parseGroupedExpression();
+    std::unique_ptr<Expression> parseIfExpression();
 
     // Helper functions
 
@@ -83,7 +92,6 @@ private:
     Token curToken;
     Token peekToken;
 
-
     void nextToken();
 
     // Setup the prefix parse functions
@@ -113,6 +121,13 @@ private:
             return this->parseBoolean();
         });
 
+        registerPrefix(LPAREN, [this]() -> std::unique_ptr<Expression> {
+            return this->parseGroupedExpression();
+        });
+
+        registerPrefix(IF, [this]() -> std::unique_ptr<Expression> {
+            return this->parseIfExpression();
+        }); 
     }
 
     void setupInfixParseFns() {

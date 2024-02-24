@@ -229,3 +229,54 @@ public:
         return token.Literal; 
     }
 };
+
+class BlockStatement : public Statement {
+public:
+    Token token; // The '{' token
+    std::vector<std::unique_ptr<Statement>> Statements;
+
+    BlockStatement(const Token& tok) : token(tok) {}
+
+    void statementNode() override {}
+
+    std::string TokenLiteral() const override {
+        return token.Literal;
+    }
+
+    std::string String() const override {
+        std::ostringstream out;
+        for (const auto& stmt : Statements) {
+            out << stmt->String();
+        }
+        return out.str();
+    }
+};
+
+class IfExpression : public Expression {
+public:
+    Token token; // The 'if' token
+    std::unique_ptr<Expression> Condition;
+    std::unique_ptr<BlockStatement> Consequence;
+    std::unique_ptr<BlockStatement> Alternative;
+
+    IfExpression(const Token& tok) : token(tok) {}
+
+    void expressionNode() override {}
+
+    std::string TokenLiteral() const override {
+        return token.Literal;
+    }
+
+    std::string String() const override {
+        std::ostringstream out;
+        out << "IF ";
+        out << Condition->String();
+        out << " " << Consequence->String();
+
+        if (Alternative) {
+            out << "else " << Alternative->String();
+        }
+
+        return out.str();
+    }
+};

@@ -72,7 +72,9 @@ int main(int argc, char* argv[]) {
     //TestParsingPrefixExpressions();
     //TestParsingInfixExpressions();
     //TestOperatorPrecedenceParsing();
-    TestBooleanExpression();
+    //TestBooleanExpression();
+    //TestIfExpression();
+    TestIfElseExpression();
 
     // Testing for AST - uncomment to test parser or add more test cases at ast_test
     //TestString();

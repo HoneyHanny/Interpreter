@@ -1,5 +1,7 @@
 #include "parser_test.h"
 
+
+
 static void assertEqual(const std::string& actual, const std::string& expected, const std::string& message) {
     if (actual != expected) {
         std::cerr << "Assertion failed: " << message << "\n"
@@ -287,9 +289,9 @@ void TestParsingPrefixExpressions() {
 void TestParsingInfixExpressions() {
     struct InfixTest {
         std::string input;
-        int64_t leftValue;
+        const LiteralTypeValues leftValue;
         std::string op;
-        int64_t rightValue;
+        const LiteralTypeValues rightValue;
     };
 
     std::vector<InfixTest> infixTests = {
@@ -301,6 +303,9 @@ void TestParsingInfixExpressions() {
         {"5 < 5\n", 5, "<", 5}, 
         {"5 == 5\n", 5, "==", 5}, 
         {"5 <> 5\n", 5, "<>", 5},
+        {"TRUE == FALSE", true, "==", false}, 
+        {"TRUE <> FALSE", true, "<>", false}, 
+        {"FALSE == FALSE", false, "==", false},
     };
 
     for (const auto& tt : infixTests) {
@@ -326,8 +331,9 @@ void TestParsingInfixExpressions() {
             std::exit(EXIT_FAILURE);
         }
 
-        if (!testNumericalLiteral(exp->Left, tt.leftValue)) {
-            continue; 
+        if (!testLiteralExpression(exp->Left, tt.leftValue)) {
+            std::cerr << "Left: " << std::endl;
+            continue;
         }
 
         if (exp->Operator != tt.op) {
@@ -335,9 +341,20 @@ void TestParsingInfixExpressions() {
             std::exit(EXIT_FAILURE);
         }
 
-        if (!testNumericalLiteral(exp->Right, tt.rightValue)) {
-            continue; // Adjust error handling as needed
+        if (!testLiteralExpression(exp->Right, tt.rightValue)) {
+            std::cerr << "Right" << std::endl;
+            continue;
         }
+
+        /*if (!testNumericalLiteral(exp->Left, tt.leftValue)) {
+            continue; 
+        }
+
+        
+
+        if (!testNumericalLiteral(exp->Right, tt.rightValue)) {
+            continue; 
+        }*/
     }
 
     std::cout << "TestParsingInfixExpressions passed." << std::endl;
@@ -362,10 +379,15 @@ void TestOperatorPrecedenceParsing() {
         {"5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"},
         {"5 < 4 <> 3 > 4", "((5 < 4) <> (3 > 4))"},
         {"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
-        { "true", "true", }, 
-        { "false", "false", }, 
-        { "3 > 5 == false", "((3 > 5) == false)", }, 
-        { "3 < 5 == true", "((3 < 5) == true)", },
+        { "TRUE", "TRUE", }, 
+        { "FALSE", "FALSE", }, 
+        { "3 > 5 == FALSE", "((3 > 5) == FALSE)", }, 
+        { "3 < 5 == FALSE", "((3 < 5) == FALSE)", },
+        { "1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)", },
+        { "(5 + 5) * 2", "((5 + 5) * 2)", }, 
+        { "2 / (5 + 5)", "(2 / (5 + 5))", }, 
+        { "-(5 + 5)", "(-(5 + 5))", }, 
+        { "!(TRUE == TRUE)", "(!(TRUE == TRUE))", },
     };
 
     for (const auto& test : tests) {
@@ -383,62 +405,6 @@ void TestOperatorPrecedenceParsing() {
             std::cout << "Test passed for: " << test.input << std::endl;
         }
     }
-}
-
-bool testIdentifier(const std::unique_ptr<Expression>& exp, const std::string& value) {
-    auto ident = dynamic_cast<Identifier*>(exp.get());
-    if (!ident) {
-        std::cerr << "Expression not Identifier. got=" << typeid(*exp).name() << std::endl;
-        return false;
-    }
-
-    if (ident->Value != value) {
-        std::cerr << "ident.Value not " << value << ". got=" << ident->Value << std::endl;
-        return false;
-    }
-
-    if (ident->TokenLiteral() != value) {
-        std::cerr << "ident.TokenLiteral not " << value << ". got=" << ident->TokenLiteral() << std::endl;
-        return false;
-    }
-
-    return true;
-}
-
-bool testLiteralExpression(const std::unique_ptr<Expression>& exp, const std::variant<int64_t, std::string>& expected) {
-    if (std::holds_alternative<int64_t>(expected)) {
-        return testNumericalLiteral(exp, std::get<int64_t>(expected));
-    }
-    else if (std::holds_alternative<std::string>(expected)) {
-        return testIdentifier(exp, std::get<std::string>(expected));
-    }
-    else {
-        std::cerr << "Type of expected not handled." << std::endl;
-        return false;
-    }
-}
-
-bool testInfixExpression(const std::unique_ptr<Expression>& exp, const std::variant<int64_t, std::string>& left, const std::string& operator_, const std::variant<int64_t, std::string>& right) {
-    auto opExp = dynamic_cast<InfixExpression*>(exp.get());
-    if (!opExp) {
-        std::cerr << "Expression is not InfixExpression. got=" << typeid(*exp).name() << std::endl;
-        return false;
-    }
-
-    if (!testLiteralExpression(opExp->Left, left)) {
-        return false;
-    }
-
-    if (opExp->Operator != operator_) {
-        std::cerr << "Operator is not '" << operator_ << "'. got=" << opExp->Operator << std::endl;
-        return false;
-    }
-
-    if (!testLiteralExpression(opExp->Right, right)) {
-        return false;
-    }
-
-    return true;
 }
 
 void TestBooleanExpression() {
@@ -482,4 +448,217 @@ void TestBooleanExpression() {
     }
 
     std::cout << "testBoolean passed." << std::endl;
+}
+
+void TestIfExpression() {
+    std::string input = R"(
+    IF(x < y) 
+        BEGIN IF 
+        x 
+        END IF
+    ELSE
+        BEGIN ELSE
+        some_var
+        END ELSE)";
+    auto lexer = std::make_unique<Lexer>(input);
+    Parser parser(std::move(lexer));
+    auto program = parser.ParseProgram();
+    checkParserErrors(parser); // Implement this based on your error handling
+
+    if (program->Statements.size() != 1) {
+        std::cerr << "Program does not contain 1 statement. Got=" << program->Statements.size() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
+    if (!stmt) {
+        std::cerr << "Program's first statement is not ExpressionStatement." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto exp = dynamic_cast<IfExpression*>(stmt->Expression.get());
+    if (!exp) {
+        std::cerr << "Statement's expression is not IfExpression." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (!testInfixExpression(exp->Condition, "x", "<", "y")) {
+        std::cerr << "Condition test failed." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (exp->Consequence->Statements.size() != 1) {
+        std::cerr << "Consequence does not contain 1 statement. Got=" << exp->Consequence->Statements.size() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto consequence = dynamic_cast<ExpressionStatement*>(exp->Consequence->Statements[0].get());
+    if (!consequence) {
+        std::cerr << "Consequence's first statement is not ExpressionStatement." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (!testIdentifier(consequence->Expression, "x")) {
+        std::cerr << "Identifier test failed." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (exp->Alternative != nullptr) {
+        std::cerr << "Expected no alternative, but one was found." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    std::cout << "TestIfStatement passed." << std::endl;
+}
+
+void TestIfElseExpression() {
+    std::string input = R"(
+    IF(x < y) 
+        BEGIN IF 
+        x 
+        END IF
+    ELSE
+        BEGIN ELSE
+        some_var
+        END ELSE)";
+    auto lexer = std::make_unique<Lexer>(input);
+    Parser parser(std::move(lexer));
+    auto program = parser.ParseProgram();
+    checkParserErrors(parser); // Implement this based on your error handling
+
+    if (program->Statements.size() != 1) {
+        std::cerr << "Program does not contain 1 statement. Got=" << program->Statements.size() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
+    if (!stmt) {
+        std::cerr << "Program's first statement is not ExpressionStatement." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto exp = dynamic_cast<IfExpression*>(stmt->Expression.get());
+    if (!exp) {
+        std::cerr << "Statement's expression is not IfExpression." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (!testInfixExpression(exp->Condition, "x", "<", "y")) {
+        std::cerr << "Condition test failed." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (exp->Consequence->Statements.size() != 1) {
+        std::cerr << "Consequence does not contain 1 statement. Got=" << exp->Consequence->Statements.size() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto consequence = dynamic_cast<ExpressionStatement*>(exp->Consequence->Statements[0].get());
+    if (!consequence) {
+        std::cerr << "Consequence's first statement is not ExpressionStatement." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (!testIdentifier(consequence->Expression, "x")) {
+        std::cerr << "Identifier test failed." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (exp->Alternative == nullptr) {
+        std::cerr << "Expected an alternative, but none was found." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto alternative = dynamic_cast<ExpressionStatement*>(exp->Alternative->Statements[0].get());
+    if (!alternative) {
+        std::cerr << "Alternative's first statement is not ExpressionStatement." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (!testIdentifier(alternative->Expression, "some_var")) {
+        std::cerr << "Identifier test failed." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    std::cout << "TestIfElseStatement passed." << std::endl;
+}
+
+bool testIdentifier(const std::unique_ptr<Expression>& exp, const std::string& value) {
+    auto ident = dynamic_cast<Identifier*>(exp.get());
+    if (!ident) {
+        std::cerr << "Expression not Identifier. got=" << typeid(*exp).name() << std::endl;
+        return false;
+    }
+
+    if (ident->Value != value) {
+        std::cerr << "ident.Value not " << value << ". got=" << ident->Value << std::endl;
+        return false;
+    }
+
+    if (ident->TokenLiteral() != value) {
+        std::cerr << "ident.TokenLiteral not " << value << ". got=" << ident->TokenLiteral() << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+bool testLiteralExpression(const std::unique_ptr<Expression>& exp, const LiteralTypeValues& expected) {
+    if (std::holds_alternative<int64_t>(expected)) {
+        return testNumericalLiteral(exp, std::get<int64_t>(expected));
+    }
+    else if (std::holds_alternative<std::string>(expected)) {
+        return testIdentifier(exp, std::get<std::string>(expected));
+    }
+    else if (std::holds_alternative<bool>(expected)) {
+        return testBooleanLiteral(exp, std::get<bool>(expected));
+    }
+    else {
+        std::cerr << "Type of expected not handled." << std::endl;
+        return false;
+    }
+}
+
+bool testInfixExpression(const std::unique_ptr<Expression>& exp, const LiteralTypeValues& left, const std::string& operator_, const LiteralTypeValues& right) {
+    auto opExp = dynamic_cast<InfixExpression*>(exp.get());
+    if (!opExp) {
+        std::cerr << "Expression is not InfixExpression. got=" << typeid(*exp).name() << std::endl;
+        return false;
+    }
+
+    if (!testLiteralExpression(opExp->Left, left)) {
+        return false;
+    }
+
+    if (opExp->Operator != operator_) {
+        std::cerr << "Operator is not '" << operator_ << "'. got=" << opExp->Operator << std::endl;
+        return false;
+    }
+
+    if (!testLiteralExpression(opExp->Right, right)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool testBooleanLiteral(const std::unique_ptr<Expression>& exp, bool value) {
+    auto bo = dynamic_cast<Boolean*>(exp.get());
+    if (!bo) {
+        std::cerr << "Expression is not ast::Boolean. got=" << typeid(*exp).name() << std::endl;
+        return false;
+    }
+
+    if (bo->Value != value) {
+        std::cerr << "Boolean value not " << std::boolalpha << value << ". got=" << std::boolalpha << bo->Value << std::endl;
+        return false;
+    }
+
+    std::string valueStr = value ? "TRUE" : "FALSE";
+    if (bo->TokenLiteral() != valueStr) {
+        std::cerr << "TokenLiteral not " << valueStr << ". got=" << bo->TokenLiteral() << std::endl;
+        return false;
+    }
+
+    return true;
 }
