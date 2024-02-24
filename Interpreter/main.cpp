@@ -11,7 +11,16 @@ static void displayHelp() {
     // TODO(hans): Print more help
     static bool done = false;
     if (!done) {
-        std::cout << " Help:" << std::endl;
+        std::cout <<"\
+     ________  ________  ________  _______\n\
+    |\\   ____\\|\\   __  \\|\\   ___ \\|\\  ___ \\\n\
+    \\ \\  \\___|\\ \\  \\|\\  \\ \\  \\_|\\ \\ \\   __/|    \n\
+     \\ \\  \\    \\ \\  \\\\\\  \\ \\  \\ \\\\ \\ \\  \\_|/__  \n\
+      \\ \\  \\____\\ \\  \\\\\\  \\ \\  \\_\\\\ \\ \\  \\_|\\ \\ \n\
+       \\ \\_______\\ \\_______\\ \\_______\\ \\_______\\ \n\
+        \\|_______|\\|_______|\\|_______|\\|_______|" << std::endl;
+                                            
+        std::cout << "\n Help:" << std::endl;
         std::cout << " Github: https://github.com/HoneyHanny/Interpreter" << std::endl;
         std::cout << " Usage: code <filename|flags> " << std::endl;
         std::cout << " -h | --help : Display help" << std::endl;
@@ -21,7 +30,7 @@ static void displayHelp() {
 }
 
 static void displayVerbose() {
-    // TODO(hans): implement verbose
+    // TODO(hans): Implement verbose
     static bool done = false;
     if (!done) {
         std::cerr << "Verbose not implemented" << std::endl;
