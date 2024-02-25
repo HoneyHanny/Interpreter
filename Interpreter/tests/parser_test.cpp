@@ -48,6 +48,7 @@ void TestTypedDeclStatements() {
 INT x = 5
 FLOAT y = 10
 CHAR foobar = 10
+INT test
 )";
         
 
@@ -62,14 +63,16 @@ CHAR foobar = 10
     
     checkParserErrors(parser);
 
-    if (program->Statements.size() != 3) {
-        std::cerr << "program.Statements does not contain 3 statements. got=" << program->Statements.size() << std::endl;
+    std::cout << program->Statements.size() << std::endl;
+    if (program->Statements.size() != 4) {
+        std::cerr << "program.Statements does not contain 4 statements. got=" << program->Statements.size() << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
-    std::vector<std::string> tests = { "x", "y", "foobar" };
+    std::vector<std::string> tests = {"x", "y", "foobar", "test"};
 
     for (size_t i = 0; i < tests.size(); ++i) {
+        std::cout << "Typed Statement: " << program->Statements[i].get()->String() << std::endl;
         if (!testTypedDeclStatement(program->Statements[i].get(), tests[i])) {
             std::exit(EXIT_FAILURE);
         }
@@ -248,8 +251,8 @@ void TestParsingPrefixExpressions() {
     };
 
     std::vector<PrefixTest> prefixTests = {
-        {"!5;", "!", 5},
-        {"-15;", "-", 15},
+        {"!5", "!", 5},
+        {"-15", "-", 15},
     };
 
     for (const auto& tt : prefixTests) {
@@ -375,7 +378,7 @@ void TestOperatorPrecedenceParsing() {
         {"a * b / c", "((a * b) / c)"},
         {"a + b / c", "(a + (b / c))"},
         {"a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"},
-        {"3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"},
+        {"3 + 4\n -5 * 5", "(3 + 4)((-5) * 5)"},
         {"5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"},
         {"5 < 4 <> 3 > 4", "((5 < 4) <> (3 > 4))"},
         {"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
@@ -455,11 +458,7 @@ void TestIfExpression() {
     IF(x < y) 
         BEGIN IF 
         x 
-        END IF
-    ELSE
-        BEGIN ELSE
-        some_var
-        END ELSE)";
+        END IF)";
     auto lexer = std::make_unique<Lexer>(input);
     Parser parser(std::move(lexer));
     auto program = parser.ParseProgram();
@@ -661,4 +660,112 @@ bool testBooleanLiteral(const std::unique_ptr<Expression>& exp, bool value) {
     }
 
     return true;
+}
+
+void TestFunctionLiteralParsing() {
+    std::string input = R"(
+FUNCTION foo(INT x, INT y) INT:
+BEGIN FUNCTION
+x + y
+END FUNCTION)";
+    auto lexer = std::make_unique<Lexer>(input);
+    Parser parser(std::move(lexer));
+    
+    auto program = parser.ParseProgram();
+    checkParserErrors(parser); // Assume this function prints errors and stops execution if any
+
+    if (program->Statements.size() != 1) {
+        std::cerr << "Program does not contain 1 statement. Got=" << program->Statements.size() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
+    if (!stmt) {
+        std::cerr << "Program's first statement is not ExpressionStatement." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto function = dynamic_cast<FunctionLiteral*>(stmt->Expression.get());
+    if (!function) {
+        std::cerr << "Statement's expression is not FunctionLiteral." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (function->Parameters.size() != 2) {
+        std::cerr << "Function literal parameters wrong. Want 2, got=" << function->Parameters.size() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (function->Body->Statements.size() != 1) {
+        std::cerr << "Function body does not contain 1 statement. Got=" << function->Body->Statements.size() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto bodyStmt = dynamic_cast<ExpressionStatement*>(function->Body->Statements[0].get());
+    if (!bodyStmt) {
+        std::cerr << "Function body's statement is not ExpressionStatement." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+    testInfixExpression(bodyStmt->Expression, "x", "+", "y");
+
+    std::cout << "TestFunctionLiteralParsing passed." << std::endl;
+}
+
+void TestFunctionParameterParsing() {
+    struct Test {
+        std::string input;
+        std::vector<std::string> expectedParams;
+    };
+
+    std::vector<Test> tests = {
+        {R"(
+FUNCTION VOID foo() 
+    BEGIN FUNCTION
+    
+    END FUNCTION
+)", {}},
+        {R"(
+FUNCTION VOID foo(INT x) 
+    BEGIN FUNCTION
+
+    END FUNCTION
+)", {"x"}},
+        {R"(
+FUNCTION VOID foo(INT x, INT y, INT z) 
+    BEGIN FUNCTION
+
+    END FUNCTION
+)", {"INT x", "INT y", "INT z"}},
+    };
+
+    for (const auto& tt : tests) {
+        auto lexer = std::make_unique<Lexer>(tt.input);
+        Parser parser(std::move(lexer));
+        auto program = parser.ParseProgram();
+        // Assume checkParserErrors prints errors and stops execution if any
+        checkParserErrors(parser);
+
+        auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements.at(0).get());
+        if (!stmt) {
+            std::cerr << "Statement is not an ExpressionStatement.\n";
+            continue;
+        }
+
+        auto function = dynamic_cast<FunctionLiteral*>(stmt->Expression.get());
+        if (!function) {
+            std::cerr << "Expression is not a FunctionLiteral.\n";
+            continue;
+        }
+
+        if (function->Parameters.size() != tt.expectedParams.size()) {
+            std::cerr << "Length of parameters wrong. Wanted " << tt.expectedParams.size() << ", got " << function->Parameters.size() << ".\n";
+            continue;
+        }
+
+        for (size_t i = 0; i < tt.expectedParams.size(); ++i) {
+            if (function->Parameters[i]->Name->Value != tt.expectedParams[i]) {
+                std::cerr << "Parameter mismatch. Wanted " << tt.expectedParams[i] << ", got " << function->Parameters[i]->Value << ".\n";
+            }
+        }
+    }
 }

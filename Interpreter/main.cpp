@@ -83,7 +83,8 @@ int main(int argc, char* argv[]) {
     //TestOperatorPrecedenceParsing();
     //TestBooleanExpression();
     //TestIfExpression();
-    TestIfElseExpression();
+    //TestIfElseExpression();
+    TestFunctionLiteralParsing();
 
     // Testing for AST - uncomment to test parser or add more test cases at ast_test
     //TestString();

@@ -72,6 +72,7 @@ constexpr TokenType INT = "INT";
 constexpr TokenType CHAR = "CHAR";
 constexpr TokenType BOOL = "BOOL";
 constexpr TokenType FLOAT = "FLOAT";
+constexpr TokenType VOID = "VOID";
 
 extern std::unordered_map<std::string, std::string_view> keywords;
 

@@ -1,7 +1,7 @@
 #include "Token.h"
 
 std::unordered_map<std::string, TokenType> keywords = {
-    {"FN", FUNCTION},
+    {"FUNCTION", FUNCTION},
     {"BEGIN", BEGIN},
     {"END", END},
     {"CODE", CODE},
@@ -15,4 +15,5 @@ std::unordered_map<std::string, TokenType> keywords = {
     {"CHAR", CHAR},
     {"BOOL", BOOL},
     {"FLOAT", FLOAT},
+    {"VOID", VOID},
 };

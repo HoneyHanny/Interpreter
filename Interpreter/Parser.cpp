@@ -30,6 +30,13 @@ std::unique_ptr<Statement> Parser::parseStatement() {
         || curToken.Type == CHAR 
         || curToken.Type == BOOL
         || curToken.Type == FLOAT) {
+
+        std::cout << "Called" << std::endl;
+       /* if (peekTokenIs(NEWLINE)) {
+            std::cout << "FN statement" << std::endl;
+            return nullptr;
+        }*/
+
         return parseTypedDeclStatement();
     }
     // Return Statements
@@ -47,6 +54,7 @@ std::unique_ptr<Statement> Parser::parseStatement() {
 std::unique_ptr<TypedDeclStatement> Parser::parseTypedDeclStatement() {
     Tracer tracer("parseTypedDeclStatement");
 
+    // TODO: Message here that says Parsing token: [something]
     auto stmt = std::make_unique<TypedDeclStatement>(curToken);
 
     if (!expectPeek(IDENT)) {
@@ -55,11 +63,18 @@ std::unique_ptr<TypedDeclStatement> Parser::parseTypedDeclStatement() {
 
     stmt->Name = std::make_unique<Identifier>(curToken, curToken.Literal);
 
+    if (peekTokenIs(COMMA) || peekTokenIs(NEWLINE) || peekTokenIs(RPAREN)) { // Typed statement is either a declaration w/out value or a function parameter
+        return stmt;
+    }
+
     if (!expectPeek(ASSIGN)) {
         return nullptr;
     }
 
-    // TODO: We're skipping the expressions until we encounter a newline or EOF
+    nextToken();
+
+    stmt->Value = parseExpression(Precedence::LOWEST);
+
     while (!curTokenIs(NEWLINE) && !curTokenIs(EOF_TOKEN)) {
         nextToken();
     }
@@ -75,7 +90,8 @@ std::unique_ptr<ReturnStatement> Parser::parseReturnStatement() {
 
     nextToken();
 
-    // TODO: We're skipping the expressions until we encounter a newline or EOF
+    stmt->ReturnValue = parseExpression(Precedence::LOWEST);
+
     while (!curTokenIs(NEWLINE) && !curTokenIs(EOF_TOKEN)) {
         nextToken();
     }
@@ -84,14 +100,14 @@ std::unique_ptr<ReturnStatement> Parser::parseReturnStatement() {
 }
 
 // Subtree structure: <EXPRESSION>
-std::unique_ptr<ExpressionStatement> Parser::parseExpressionStatement() {
+std::unique_ptr<ExpressionStatement> Parser::parseExpressionStatement() { 
     Tracer tracer("parseExpressionStatement");
 
     auto stmt = std::make_unique<ExpressionStatement>(curToken);
 
     stmt->Expression = parseExpression(Precedence::LOWEST);
 
-    if (peekTokenIs(SEMICOLON)) {
+    if (peekTokenIs(NEWLINE)) {
         nextToken();
     }
 
@@ -105,7 +121,7 @@ std::unique_ptr<BlockStatement> Parser::parseBlockStatement() {
     nextToken();
 
     while (!(curTokenIs(END) 
-        && (peekTokenIs(IF) || peekTokenIs(ELSE))) // ... END (IF || ELSE)
+        && (peekTokenIs(IF) || peekTokenIs(ELSE) || peekTokenIs(FUNCTION))) // ... END (IF || ELSE || FUNCTION)
         && !curTokenIs(EOF_TOKEN)) { 
         auto stmt = parseStatement();
         if (stmt != nullptr) {
@@ -125,11 +141,48 @@ std::unique_ptr<BlockStatement> Parser::parseBlockStatement() {
     return block;
 }
 
+std::vector<std::unique_ptr<TypedDeclStatement>> Parser::parseFunctionParameters() {
+    Tracer tracer("parseFunctionParameters");
+
+    std::vector<std::unique_ptr<TypedDeclStatement>> typedDeclStmts;
+
+    if (peekTokenIs(RPAREN)) {
+        std::cerr << "Failed to find RPAREN, peekToken: " << peekToken.Literal << std::endl;
+        nextToken(); 
+        return typedDeclStmts;
+    }
+
+    do {
+        nextToken(); // Move to the first parameter or next parameter after ','
+
+        // Assuming parseTypedDeclStatement parses a parameter declaration and returns a unique_ptr<TypedDeclStatement>
+        auto typedDeclStmt = parseTypedDeclStatement();
+        if (typedDeclStmt == nullptr) {
+            std::cerr << "Expected a typed declaration statement." << std::endl;
+            return {}; // Return an empty vector to indicate failure
+        }
+
+        typedDeclStmts.push_back(std::move(typedDeclStmt));
+
+        if (!peekTokenIs(COMMA)) {
+            break; // Exit if the next token is not a comma
+        }
+        nextToken(); 
+    } while (!peekTokenIs(RPAREN) && !peekTokenIs(EOF_TOKEN));
+
+    if (!expectPeek(RPAREN)) {
+        return {};
+    }
+
+    return typedDeclStmts;
+}
+
 std::unique_ptr<Expression> Parser::parseExpression(Precedence precedence) {
     Tracer tracer("parseExpression");
 
     auto prefixIt = prefixParseFns.find(curToken.Type);
     if (prefixIt == prefixParseFns.end()) {
+        std::cerr << "Cant find " << curToken.Type << std::endl;
         noPrefixParseFnError(curToken.Type);
         return nullptr;
     }
@@ -319,6 +372,86 @@ std::unique_ptr<Expression> Parser::parseIfExpression() {
 
     return expression;
 }
+
+std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
+    Tracer tracer("parseFunctionLiteral");
+
+    // Flag guards
+    if (!isFirstFunctionLiteral) {
+        // Skip parsing this IF expression if it's done parsing the original expression.
+        std::cerr << "Skipping FUNCTION expression as it's not the first." << std::endl;
+        return nullptr;
+    }
+
+    isFirstFunctionLiteral = false; // Set flag to false so that it skips other IFs
+
+    auto token = curToken; 
+    auto type = peekToken;
+    auto lit = std::make_unique<FunctionLiteral>(token, type);
+    
+    //std::cout << lit->TokenLiteral() << std::endl;
+
+    if (!expectPeek(IDENT)) {
+        std::cerr << lit->TokenLiteral() << std::endl;
+        std::cerr << "Failed to find IDENT, peekToken: " << peekToken.Type << std::endl;
+        return nullptr;
+    }
+
+    if (!expectPeek(LPAREN)) {
+        std::cerr << lit->TokenLiteral() << std::endl;
+        std::cerr << "Failed to find LPAREN, peekToken: " << peekToken.Type << std::endl;
+        return nullptr;
+    }
+
+    lit->Parameters = parseFunctionParameters();
+    //if (lit->Parameters.empty() && hasErrors) {
+    //    return nullptr; 
+    //}
+
+    if (!(peekTokenIs(INT) || peekTokenIs(CHAR) || peekTokenIs(FLOAT) || peekTokenIs(BOOL) || peekTokenIs(VOID))) { // Function must have type declaration
+        std::cerr << lit->TokenLiteral() << std::endl;
+        std::cerr << "Failed to find TYPE, peekToken: " << peekToken.Type << std::endl;
+        return nullptr;
+    }
+
+    nextToken();
+
+    if (!expectPeek(COLON)) {
+        std::cerr << lit->TokenLiteral() << std::endl;
+        std::cerr << "Failed to find COLON, peekToken: " << peekToken.Type << std::endl;
+        return nullptr;
+    }
+
+    if (!expectPeek(NEWLINE)) {
+        std::cerr << "Failed to find NEWLINE" << std::endl;
+        return nullptr;
+    }
+
+    // Parsing function header ends here
+
+    if (!expectPeek(BEGIN)) {
+        std::cerr << lit->TokenLiteral() << std::endl;
+        std::cerr << "Failed to find BEGIN, peekToken: " << peekToken.Type << std::endl;
+        return nullptr;
+    }
+
+    if (!expectPeek(FUNCTION)) {
+        std::cerr << lit->TokenLiteral() << std::endl;
+        std::cerr << "Failed to find ELSE, peekToken: " << peekToken.Type << std::endl;
+        return nullptr;
+    }
+
+
+    lit->Body = parseBlockStatement();
+
+    // Set flags to true as it's done parsing the entire control flow.
+    isFirstFunctionLiteral = true;
+
+    return lit;
+}
+
+
+
 
 // Helper functions
 

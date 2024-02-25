@@ -77,9 +77,9 @@ public:
 
         out << TokenLiteral() << " ";
         out << Name->String(); 
-        out << " = ";
-
+        
         if (Value != nullptr) {
+            out << " = ";
             out << Value->String();
         }
 
@@ -254,7 +254,7 @@ public:
 
 class IfExpression : public Expression {
 public:
-    Token token; // The 'if' token
+    Token token; 
     std::unique_ptr<Expression> Condition;
     std::unique_ptr<BlockStatement> Consequence;
     std::unique_ptr<BlockStatement> Alternative;
@@ -276,6 +276,44 @@ public:
         if (Alternative) {
             out << "else " << Alternative->String();
         }
+
+        return out.str();
+    }
+};
+
+class FunctionLiteral : public Expression {
+public:
+    Token token;
+    Token type;
+    std::vector<std::unique_ptr<TypedDeclStatement>> Parameters;
+    std::unique_ptr<BlockStatement> Body;
+
+    FunctionLiteral(const Token& tok, const Token& type) : token(tok), type(type) {}
+
+    void expressionNode() override {}
+
+    std::string TokenLiteral() const override {
+        return token.Literal;
+    }
+
+    std::string String() const override {
+        std::ostringstream out;
+        std::vector<std::string> params;
+
+        for (const auto& p : Parameters) {
+            params.push_back(p->String());
+        }
+
+        out << TokenLiteral();
+        out << "(";
+        for (size_t i = 0; i < params.size(); ++i) {
+            out << params[i];
+            if (i < params.size() - 1) {
+                out << ", ";
+            }
+        }
+        out << ") ";
+        out << Body->String();
 
         return out.str();
     }
