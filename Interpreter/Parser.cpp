@@ -31,7 +31,6 @@ std::unique_ptr<Statement> Parser::parseStatement() {
         || curToken.Type == BOOL
         || curToken.Type == FLOAT) {
 
-        std::cout << "Called" << std::endl;
        /* if (peekTokenIs(NEWLINE)) {
             std::cout << "FN statement" << std::endl;
             return nullptr;
@@ -63,7 +62,10 @@ std::unique_ptr<TypedDeclStatement> Parser::parseTypedDeclStatement() {
 
     stmt->Name = std::make_unique<Identifier>(curToken, curToken.Literal);
 
-    if (peekTokenIs(COMMA) || peekTokenIs(NEWLINE) || peekTokenIs(RPAREN)) { // Typed statement is either a declaration w/out value or a function parameter
+    // Typed statement is either a declaration w/out value or a function parameter:
+    // NEWLINE: Statement is a variable declaration (e.g. INT x) 
+    // COMMA and RPAREN: Statement is part of a function arguement
+    if (peekTokenIs(COMMA, NEWLINE, RPAREN)) { 
         return stmt;
     }
 
@@ -121,7 +123,7 @@ std::unique_ptr<BlockStatement> Parser::parseBlockStatement() {
     nextToken();
 
     while (!(curTokenIs(END) 
-        && (peekTokenIs(IF) || peekTokenIs(ELSE) || peekTokenIs(FUNCTION))) // ... END (IF || ELSE || FUNCTION)
+        && (peekTokenIs(IF, ELSE, FUNCTION))) // ... END (IF || ELSE || FUNCTION)
         && !curTokenIs(EOF_TOKEN)) { 
         auto stmt = parseStatement();
         if (stmt != nullptr) {
@@ -131,11 +133,8 @@ std::unique_ptr<BlockStatement> Parser::parseBlockStatement() {
     }
 
     if (curTokenIs(END)) { // Advance tokens by two to account for positioning. Adjust later if needed.
-        std::cout << "END TRIGGERED" << std::endl;
         nextToken();
-        std::cout << "curToken: " << curToken.Literal << std::endl;
         nextToken();
-        std::cout << "curToken: " << curToken.Literal << std::endl;
     }
 
     return block;
@@ -147,7 +146,6 @@ std::vector<std::unique_ptr<TypedDeclStatement>> Parser::parseFunctionParameters
     std::vector<std::unique_ptr<TypedDeclStatement>> typedDeclStmts;
 
     if (peekTokenIs(RPAREN)) {
-        std::cerr << "Failed to find RPAREN, peekToken: " << peekToken.Literal << std::endl;
         nextToken(); 
         return typedDeclStmts;
     }
@@ -168,7 +166,7 @@ std::vector<std::unique_ptr<TypedDeclStatement>> Parser::parseFunctionParameters
             break; // Exit if the next token is not a comma
         }
         nextToken(); 
-    } while (!peekTokenIs(RPAREN) && !peekTokenIs(EOF_TOKEN));
+    } while (!peekTokenIs(RPAREN, EOF_TOKEN));
 
     if (!expectPeek(RPAREN)) {
         return {};
@@ -388,8 +386,6 @@ std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
     auto token = curToken; 
     auto type = peekToken;
     auto lit = std::make_unique<FunctionLiteral>(token, type);
-    
-    //std::cout << lit->TokenLiteral() << std::endl;
 
     if (!expectPeek(IDENT)) {
         std::cerr << lit->TokenLiteral() << std::endl;
@@ -408,7 +404,7 @@ std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
     //    return nullptr; 
     //}
 
-    if (!(peekTokenIs(INT) || peekTokenIs(CHAR) || peekTokenIs(FLOAT) || peekTokenIs(BOOL) || peekTokenIs(VOID))) { // Function must have type declaration
+    if (!(peekTokenIs(INT, CHAR, FLOAT, BOOL, VOID))) { // Function must have type declaration
         std::cerr << lit->TokenLiteral() << std::endl;
         std::cerr << "Failed to find TYPE, peekToken: " << peekToken.Type << std::endl;
         return nullptr;
@@ -450,8 +446,52 @@ std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
     return lit;
 }
 
+std::unique_ptr<Expression> Parser::parseCallExpression(std::unique_ptr<Expression> function) {
+    Tracer tracer("parseCallExpression");
 
+    auto exp = std::make_unique<CallExpression>(curToken);
+    exp->Function = std::move(function);
+    exp->Arguments = parseCallArguments();
+    return exp;
+}
 
+std::vector<std::unique_ptr<Expression>> Parser::parseCallArguments() {
+    Tracer tracer("parseCallArguments");
+
+    std::vector<std::unique_ptr<Expression>> args;
+
+    if (peekTokenIs(NEWLINE, EOF_TOKEN)) { // Arg list is empty
+        nextToken(); 
+        return args;
+    }
+
+    do {
+        nextToken(); // Move to the first argument 
+
+        auto arg = parseExpression(Precedence::LOWEST);
+        if (!arg) {
+            return {}; 
+        }
+        args.push_back(std::move(arg));
+
+        while (peekTokenIs(COMMA)) {
+            nextToken(); // Consume the ','
+            nextToken(); // Move to the next argument
+
+            auto arg = parseExpression(Precedence::LOWEST);
+            if (!arg) {
+                return {};
+            }
+            args.push_back(std::move(arg));
+        }
+    } while (!peekTokenIs(NEWLINE, EOF_TOKEN));
+
+    if (!expectPeek(NEWLINE, EOF_TOKEN)) {
+        return {};
+    }
+
+    return args;
+}
 
 // Helper functions
 
@@ -463,6 +503,11 @@ bool Parser::peekTokenIs(const TokenType& t) const {
     return peekToken.Type == t;
 }
 
+template<typename... TokenTypes>
+bool Parser::peekTokenIs(TokenTypes... types) {
+    return ((peekToken.Type == types) || ...); // Krazy C++ wizardry...
+}
+
 bool Parser::expectPeek(const TokenType& t) {
     if (peekTokenIs(t)) {
         nextToken();
@@ -470,6 +515,20 @@ bool Parser::expectPeek(const TokenType& t) {
     }
     else {
         peekError(t);
+        return false;
+    }
+}
+
+// For expecting multiple peekToken types at once
+template<typename... TokenTypes> 
+bool Parser::expectPeek(TokenTypes... types) { 
+    if (peekTokenIs(types...)) {
+        nextToken();
+        return true;
+    }
+    else {
+        std::string expectedTypes = "";
+        peekError(expectedTypes);
         return false;
     }
 }

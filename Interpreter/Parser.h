@@ -3,6 +3,7 @@
 #include <memory> 
 #include <functional>
 #include <iostream>
+#include <initializer_list>
 #include "Lexer.h" 
 #include "Token.h" 
 #include "AST.h"  
@@ -14,7 +15,7 @@ enum class Precedence : int {
     SUM,         // + 
     PRODUCT,     // *
     PREFIX,      // -X or !X 
-    CALL         // myFunction(X
+    CALL         // myFunction: x, ...
 };
 
 
@@ -56,12 +57,22 @@ public:
     std::unique_ptr<Expression> parseGroupedExpression();
     std::unique_ptr<Expression> parseIfExpression();
     std::unique_ptr<Expression> parseFunctionLiteral();
+    std::unique_ptr<Expression> parseCallExpression(std::unique_ptr<Expression> function);
+    std::vector<std::unique_ptr<Expression>> parseCallArguments();
 
     // Helper functions
 
     bool curTokenIs(const TokenType& t) const;
     bool peekTokenIs(const TokenType& t) const;
+
+    template<typename... TokenTypes>
+    bool peekTokenIs(TokenTypes... types);
+
     bool expectPeek(const TokenType& t);
+
+    template<typename... TokenTypes>
+    bool expectPeek(TokenTypes... types);
+
     Precedence peekPrecedence() const;
     Precedence curPrecedence() const;
 
@@ -88,6 +99,7 @@ public:
         {MINUS, Precedence::SUM},
         {SLASH, Precedence::PRODUCT},
         {ASTERISK, Precedence::PRODUCT},
+        {COLON, Precedence::CALL},
     };
 private:
     std::unique_ptr<Lexer> lexer; 
@@ -140,28 +152,39 @@ private:
     void setupInfixParseFns() {
         registerInfix(PLUS, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
             return this->parseInfixExpression(std::move(left));
-            });
+        });
+
         registerInfix(MINUS, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
             return this->parseInfixExpression(std::move(left));
-            });
+        });
+
         registerInfix(SLASH, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
             return this->parseInfixExpression(std::move(left));
-            });
+        });
+
         registerInfix(ASTERISK, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
             return this->parseInfixExpression(std::move(left));
-            });
+        });
+
         registerInfix(EQ, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
             return this->parseInfixExpression(std::move(left));
-            });
+        });
+
         registerInfix(NEQ, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
             return this->parseInfixExpression(std::move(left));
-            });
+        });
+
         registerInfix(LT, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
             return this->parseInfixExpression(std::move(left));
-            });
+        });
+
         registerInfix(GT, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
             return this->parseInfixExpression(std::move(left));
-            });
+        });
+
+        registerInfix(COLON, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
+            return this->parseCallExpression(std::move(left));
+        });
     }
 
 };

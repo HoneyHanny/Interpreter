@@ -318,3 +318,39 @@ public:
         return out.str();
     }
 };
+
+class CallExpression : public Expression {
+public:
+    Token token; // The '(' token
+    std::unique_ptr<Expression> Function; // Can be Identifier or FunctionLiteral
+    std::vector<std::unique_ptr<Expression>> Arguments;
+
+    CallExpression(const Token& tok) : token(tok) {}
+
+    void expressionNode() override {}
+
+    std::string TokenLiteral() const override {
+        return token.Literal;
+    }
+
+    std::string String() const override {
+        std::ostringstream out;
+        std::vector<std::string> args;
+
+        for (const auto& arg : Arguments) {
+            args.push_back(arg->String());
+        }
+
+        out << Function->String();
+        out << "(";
+        for (size_t i = 0; i < args.size(); ++i) {
+            out << args[i];
+            if (i < args.size() - 1) {
+                out << ", ";
+            }
+        }
+        out << ")";
+
+        return out.str();
+    }
+};
