@@ -74,19 +74,19 @@ int main(int argc, char* argv[]) {
     //TestNextToken3();
 
     // Testing for parser - uncomment to test parser or add more test cases at parser_test
-    TestTypedDeclStatements();
-    TestReturnStatements();
-    TestIdentifierExpression();
-    TestNumericalLiteralExpression();
-    TestParsingPrefixExpressions();
-    TestParsingInfixExpressions();
-    TestOperatorPrecedenceParsing();
-    TestBooleanExpression();
-    TestIfExpression();
-    TestIfElseExpression();
-    TestFunctionLiteralParsing();
-    TestFunctionParameterParsing();
-    TestCallExpressionParsing();
+    //TestTypedDeclStatements();
+    //TestReturnStatements();
+    //TestIdentifierExpression();
+    //TestNumericalLiteralExpression();
+    //TestParsingPrefixExpressions();
+    //TestParsingInfixExpressions();
+    //TestOperatorPrecedenceParsing();
+    //TestBooleanExpression();
+    //TestIfExpression();
+    //TestIfElseExpression();
+    //TestFunctionLiteralParsing();
+    //TestFunctionParameterParsing();
+    //TestCallExpressionParsing();
 
     // Testing for AST - uncomment to test parser or add more test cases at ast_test
     //TestString();

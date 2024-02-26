@@ -27,8 +27,6 @@ class Parser {
 public:
     Parser(std::unique_ptr<Lexer> lexer) : lexer(std::move(lexer)) {
         // Call nextToken twice to initialize currToken and peekToken
-        std::cout << "Initialize Parser" << std::endl;
-
         nextToken();
         nextToken();
 

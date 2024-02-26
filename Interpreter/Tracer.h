@@ -31,4 +31,4 @@ private:
 };
 
 int Tracer::indentLevel = 0;
-bool Tracer::trace = true; // Set to true for function tracing;
+bool Tracer::trace = false; // Set to true for function tracing;

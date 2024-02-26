@@ -4,6 +4,7 @@
 #include <string>
 #include "Lexer.h"
 #include "Token.h" 
+#include "Parser.h"
 
 class Repl {
 public:

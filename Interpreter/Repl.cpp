@@ -1,5 +1,11 @@
 #include "Repl.h"
 
+static void printParserErrors(std::ostream& out, const std::vector<std::string>& errors) {
+    for (const auto& error : errors) {
+        out << "Parser error: " << error << std::endl;
+    }
+}
+
 void Repl::Start(std::istream& in, std::ostream& out) {
     const std::string PROMPT = ">> ";
 
@@ -10,10 +16,15 @@ void Repl::Start(std::istream& in, std::ostream& out) {
             break; // Exit loop if input stream is closed or an error occurs
         }
 
-        Lexer l(line);
+        auto lexer = std::make_unique<Lexer>(line);
+        Parser parser(std::move(lexer));
+        auto program = parser.ParseProgram();
 
-        for (Token tok = l.NextToken(); tok.Type != "EOF"; tok = l.NextToken()) {
-            out << "Type: " << tok.Type << ", Literal: " << tok.Literal << std::endl;
+        if (!parser.Errors().empty()) {
+            printParserErrors(std::cout, parser.Errors());
+            continue;
         }
+
+        std::cout << "Parsed program: " << program->String() << std::endl;
     }
 }
