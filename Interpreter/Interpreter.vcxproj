@@ -139,6 +139,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AST.h" />
+    <ClInclude Include="Tests.h" />
     <ClInclude Include="tests\ast_test.h" />
     <ClInclude Include="tests\lexer_test.h" />
     <ClInclude Include="Lexer.h" />
