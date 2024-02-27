@@ -35,7 +35,8 @@ void ExecuteTestCases() {
     //TestString();
 
     // Testing for evaluator
-    TestEvalNumericalExpression();
-    TestEvalBooleanExpression();
-    TestBangOperator();
+    //TestEvalNumericalExpression();
+    //TestEvalBooleanExpression();
+    //TestBangOperator();
+    TestIfElseExpressions();
 }

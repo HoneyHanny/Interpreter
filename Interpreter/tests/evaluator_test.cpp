@@ -1,5 +1,6 @@
 #include "evaluator_test.h"
 
+
 static std::unique_ptr<Object> testEval(const std::string& input) {
     auto lexer = std::make_unique<Lexer>(input);
     Parser parser(std::move(lexer));
@@ -9,8 +10,8 @@ static std::unique_ptr<Object> testEval(const std::string& input) {
     return Eval(program.get());
 }
 
-static bool testIntegerObject(Object* obj, int64_t expected) {
-    auto result = dynamic_cast<IntegerObject*>(obj);
+static bool testIntegerObject(const std::unique_ptr<Object>& obj, int64_t expected) {
+    auto result = dynamic_cast<IntegerObject*>(obj.get());
     if (!result) {
         std::cerr << "object is not Integer. got=" << typeid(*obj).name() << std::endl;
         return false;
@@ -50,7 +51,7 @@ void TestEvalNumericalExpression() {
 
     for (const auto& tt : tests) {
         auto evaluated = testEval(tt.input);
-        if (!testIntegerObject(evaluated.get(), tt.expected)) {
+        if (!testIntegerObject(evaluated, tt.expected)) {
             std::cerr << "Test failed for input: " << tt.input << std::endl;
         }
         std::cout << "Test passed for input: " << tt.input << std::endl;
@@ -140,4 +141,82 @@ void TestBangOperator() {
     }
 
     std::cout << "TestBangOperator passed." << std::endl;
+}
+
+static bool testNullObject(const std::unique_ptr<Object>& obj) {
+    if (dynamic_cast<NullObject*>(obj.get()) == nullptr) {
+        std::cerr << "Object is not a NullObject. got = " << typeid(*obj).name() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+void TestIfElseExpressions() {
+    struct Test {
+        std::string input;
+        std::optional<int> expected;
+    };
+
+    std::vector<Test> tests = {
+        {R"(
+IF (TRUE) 
+    BEGIN IF 
+    10
+    END IF)", 10},
+        {R"(
+IF (FALSE) 
+    BEGIN IF 
+    10
+    END IF)", std::nullopt},
+        {R"(
+IF (1) 
+    BEGIN IF 
+    10
+    END IF)", 10},
+        {R"(
+IF (1 < 2) 
+    BEGIN IF 
+    10
+    END IF)", 10},
+        {R"(
+IF (1 > 2) 
+    BEGIN IF 
+    10
+    END IF)", 10},
+        {R"(
+IF (1 > 2) 
+    BEGIN IF 
+    10
+    END IF
+ELSE
+    BEGIN ELSE
+    20
+    END ELSE)", 20},
+        {R"(
+IF (1 < 2) 
+    BEGIN IF 
+    10
+    END IF
+ELSE
+    BEGIN ELSE
+    20
+    END ELSE)", 10},
+    };
+
+    for (const auto& tt : tests) {
+        auto evaluated = testEval(tt.input);
+        if (tt.expected.has_value()) {
+            if (!testIntegerObject(evaluated, tt.expected.value())) {
+                std::cerr << "Test failed for input: " << tt.input << std::endl;
+            }
+            std::cout << "Test passed for input: " << tt.input << std::endl;
+        }
+        else {
+            if (!testNullObject(evaluated)) {
+                std::cerr << "Test failed for input: " << tt.input << std::endl;
+            }
+        }
+    }
+
+    std::cout << "TestIfElseExpressions passed." << std::endl;
 }

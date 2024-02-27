@@ -119,6 +119,36 @@ static std::unique_ptr<Object> evalInfixExpression(
     }
 }
 
+static bool isTruthy(const std::unique_ptr<Object>& obj) {
+    if (dynamic_cast<NullObject*>(obj.get()) != nullptr) {
+        return false;
+    }
+    else if (auto boolVal = dynamic_cast<BooleanObject*>(obj.get())) {
+        if (boolVal->Value == true) {
+            return true;
+        }
+        else if (boolVal->Value == false) {
+            return false;
+        }
+    }
+    // For any other object type, consider it truthy
+    return true;
+}
+
+static std::unique_ptr<Object> evalIfExpression(const IfExpression* ie) {
+    auto condition = Eval(ie->Condition.get());
+
+    if (isTruthy(condition)) {
+        return Eval(ie->Consequence.get());
+    }
+    else if (ie->Alternative) {
+        return Eval(ie->Alternative.get());
+    }
+    else {
+        return std::make_unique<NullObject>();
+    }
+}
+
 std::unique_ptr<Object> Eval(const Node* node) {
     // Numerical Literal -> Integer Object
     if (auto programNode = dynamic_cast<const Program*>(node)) {
@@ -141,6 +171,12 @@ std::unique_ptr<Object> Eval(const Node* node) {
         auto left = Eval(infixExpr->Left.get());
         auto right = Eval(infixExpr->Right.get());
         return evalInfixExpression(infixExpr->Operator, std::move(left), std::move(right));
+    }
+    else if (auto blockStmt = dynamic_cast<const BlockStatement*>(node)) {
+        return evalStatements(blockStmt->Statements);
+    }
+    else if (auto ifExpr = dynamic_cast<const IfExpression*>(node)) {
+        return evalIfExpression(ifExpr);
     }
     return nullptr;
 }
