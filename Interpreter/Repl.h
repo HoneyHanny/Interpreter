@@ -5,6 +5,7 @@
 #include "Lexer.h"
 #include "Token.h" 
 #include "Parser.h"
+#include "Evaluator.h"
 
 class Repl {
 public:

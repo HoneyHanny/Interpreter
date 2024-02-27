@@ -25,6 +25,9 @@ void Repl::Start(std::istream& in, std::ostream& out) {
             continue;
         }
 
-        std::cout << "Parsed program: " << program->String() << std::endl;
+        auto evaluated = Eval(program.get());
+        if (evaluated != nullptr) {
+            out << evaluated->Inspect() << std::endl;
+        }
     }
 }

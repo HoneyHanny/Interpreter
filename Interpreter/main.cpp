@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
 
     std::vector<std::string> files;
 
-    ExecuteTestCases();
+    ExecuteTestCases(); // Comment out in actual
 
     // Process command arguments
     for (int i = 1; i < argc; i++) {
