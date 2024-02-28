@@ -8,6 +8,7 @@ enum class ObjectType_ {
     INTEGER_OBJ,
     BOOLEAN_OBJ,
     NULL_OBJ,
+    RETURN_VALUE_OBJ,
     // Add other types as needed
 };
 
@@ -24,6 +25,7 @@ inline std::string ObjectTypeToString(ObjectType_ type) {
     case ObjectType_::INTEGER_OBJ: return "INTEGER";
     case ObjectType_::BOOLEAN_OBJ: return "BOOLEAN";
     case ObjectType_::NULL_OBJ: return "NULL";
+    case ObjectType_::RETURN_VALUE_OBJ: return "RETURN";
         // Add cases for other types
     default: return "UNKNOWN";
     }
@@ -70,5 +72,24 @@ public:
 
     std::string Inspect() const override {
         return "NULL";
+    }
+};
+
+class ReturnValue : public Object {
+public:
+    std::unique_ptr<Object> Value;
+
+    explicit ReturnValue(std::unique_ptr<Object> value) : Value(std::move(value)) {}
+
+    ObjectType Type() const override {
+        return ObjectTypeToString(ObjectType_::RETURN_VALUE_OBJ);
+    }
+
+    std::string Inspect() const override {
+        return Value->Inspect();
+    }
+
+    std::unique_ptr<Object> TakeValue() {
+        return std::move(Value);
     }
 };

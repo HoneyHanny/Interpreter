@@ -118,14 +118,13 @@ std::unique_ptr<ExpressionStatement> Parser::parseExpressionStatement() {
 
 std::unique_ptr<BlockStatement> Parser::parseBlockStatement() {
     Tracer tracer("parseBlockStatement");
-
     auto block = std::make_unique<BlockStatement>(curToken);
     nextToken();
 
     while (!(curTokenIs(END) 
         && (peekTokenIs(IF, ELSE, FUNCTION))) // ... END (IF || ELSE || FUNCTION)
         && !curTokenIs(EOF_TOKEN)) { 
-        auto stmt = parseStatement();
+        auto stmt = parseStatement();   
         if (stmt != nullptr) {
             block->Statements.push_back(std::move(stmt));
         }
@@ -136,7 +135,6 @@ std::unique_ptr<BlockStatement> Parser::parseBlockStatement() {
         nextToken();
         nextToken();
     }
-
     return block;
 }
 
@@ -282,21 +280,21 @@ std::unique_ptr<Expression> Parser::parseGroupedExpression() {
 
 std::unique_ptr<Expression> Parser::parseIfExpression() {
     Tracer tracer("parseIfExpression");
+    std::cout << "called" << std::endl;
+    //// Flag guards
+    //if (!isFirstIfExpression) {
+    //    // Skip parsing this IF expression if it's done parsing the original expression.
+    //    std::cerr << "Skipping IF expression as it's not the first." << std::endl;
+    //    return nullptr;
+    //}
 
-    // Flag guards
-    if (!isFirstIfExpression) {
-        // Skip parsing this IF expression if it's done parsing the original expression.
-        std::cerr << "Skipping IF expression as it's not the first." << std::endl;
-        return nullptr;
-    }
+    //if (!isFirstElseExpression) {
+    //    // Skip parsing this IF expression if it's done parsing the original expression.
+    //    std::cerr << "Skipping ELSE expression as it's not the first." << std::endl;
+    //    return nullptr;
+    //}
 
-    if (!isFirstElseExpression) {
-        // Skip parsing this IF expression if it's done parsing the original expression.
-        std::cerr << "Skipping ELSE expression as it's not the first." << std::endl;
-        return nullptr;
-    }
-
-    isFirstIfExpression = false; // Set flag to false so that it skips other IFs
+    //isFirstIfExpression = false; // Set flag to false so that it skips other IFs
 
     auto token = curToken; 
     auto expression = std::make_unique<IfExpression>(token);
@@ -364,9 +362,9 @@ std::unique_ptr<Expression> Parser::parseIfExpression() {
         expression->Alternative = parseBlockStatement();
     }
 
-    // Set flags to true as it's done parsing the entire control flow.
-    isFirstIfExpression = true; 
-    isFirstElseExpression = true;
+    //// Set flags to true as it's done parsing the entire control flow.
+    //isFirstIfExpression = true; 
+    //isFirstElseExpression = true;
 
     return expression;
 }

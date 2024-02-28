@@ -16,3 +16,4 @@ void TestEvalNumericalExpression();
 void TestEvalBooleanExpression();
 void TestBangOperator();
 void TestIfElseExpressions();
+void TestReturnStatementsV2();

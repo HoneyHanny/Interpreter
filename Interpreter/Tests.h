@@ -26,6 +26,8 @@ void ExecuteTestCases() {
     //TestOperatorPrecedenceParsing();
     //TestBooleanExpression();
     //TestIfExpression();
+    //TestNestedIfExpression();
+    //TestNestedIfInElseExpression();
     //TestIfElseExpression();
     //TestFunctionLiteralParsing();
     //TestFunctionParameterParsing();
@@ -38,5 +40,6 @@ void ExecuteTestCases() {
     //TestEvalNumericalExpression();
     //TestEvalBooleanExpression();
     //TestBangOperator();
-    TestIfElseExpressions();
+    //TestIfElseExpressions();
+    TestReturnStatementsV2();
 }

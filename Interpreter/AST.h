@@ -271,10 +271,12 @@ public:
         std::ostringstream out;
         out << "IF ";
         out << Condition->String();
-        out << " " << Consequence->String();
+        out << "\nBEGIN IF\n";
+        out << Consequence->String();
+        out << "\nEND IF";
 
         if (Alternative) {
-            out << "else " << Alternative->String();
+            out << "ELSE " << Alternative->String();
         }
 
         return out.str();

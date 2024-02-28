@@ -18,6 +18,8 @@ void TestParsingInfixExpressions();
 void TestOperatorPrecedenceParsing();
 void TestBooleanExpression();
 void TestIfExpression();
+void TestNestedIfInElseExpression();
+void TestNestedIfExpression();
 void TestIfElseExpression();
 void TestFunctionLiteralParsing();
 void TestFunctionParameterParsing();

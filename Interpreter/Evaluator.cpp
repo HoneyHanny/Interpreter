@@ -1,12 +1,16 @@
 #include "Evaluator.h"
 
-static std::unique_ptr<Object> evalStatements(const std::vector<std::unique_ptr<Statement>>& stmts) {
+static std::unique_ptr<Object> evalProgram(const std::vector<std::unique_ptr<Statement>>& stmts) {
     std::unique_ptr<Object> result;
     for (const auto& statement : stmts) {
         // Dynamic cast to Node* for Eval
         const Node* node = dynamic_cast<const Node*>(statement.get());
         if (node) {
             result = Eval(node);
+
+            if (auto returnValue = dynamic_cast<ReturnValue*>(result.get())) {
+                return std::unique_ptr<Object>(returnValue->TakeValue());
+            }
         }
         else {
             throw std::runtime_error("Failed to cast Statement to Node");
@@ -149,10 +153,24 @@ static std::unique_ptr<Object> evalIfExpression(const IfExpression* ie) {
     }
 }
 
+static std::unique_ptr<Object> evalBlockStatement(const BlockStatement* block) {
+    std::unique_ptr<Object> result = nullptr;
+
+    for (const auto& statement : block->Statements) {
+        result = Eval(statement.get());
+
+        if (result != nullptr && result->Type() == ObjectTypeToString(ObjectType_::RETURN_VALUE_OBJ)) {
+            return result;
+        }
+    }
+
+    return result;
+}
+
 std::unique_ptr<Object> Eval(const Node* node) {
     // Numerical Literal -> Integer Object
     if (auto programNode = dynamic_cast<const Program*>(node)) {
-        return evalStatements(programNode->Statements);
+        return evalProgram(programNode->Statements);
     }
     else if (auto exprStmtNode = dynamic_cast<const ExpressionStatement*>(node)) {
         return Eval(exprStmtNode->Expression.get());
@@ -173,10 +191,14 @@ std::unique_ptr<Object> Eval(const Node* node) {
         return evalInfixExpression(infixExpr->Operator, std::move(left), std::move(right));
     }
     else if (auto blockStmt = dynamic_cast<const BlockStatement*>(node)) {
-        return evalStatements(blockStmt->Statements);
+        return evalBlockStatement(blockStmt);
     }
     else if (auto ifExpr = dynamic_cast<const IfExpression*>(node)) {
         return evalIfExpression(ifExpr);
+    }
+    else if (const auto* returnStmt = dynamic_cast<const ReturnStatement*>(node)) {
+        auto val = Eval(returnStmt->ReturnValue.get());
+        return std::make_unique<ReturnValue>(std::move(val));
     }
     return nullptr;
 }

@@ -135,6 +135,7 @@ void TestBangOperator() {
         auto evaluated = testEval(tt.input);
         if (!testBooleanObject(evaluated, tt.expected)) {
             std::cerr << "Test failed: " << tt.input << " expected " << std::boolalpha << tt.expected << std::endl;
+            std::exit(EXIT_FAILURE);
         }
 
         std::cout << "Test passed for input: " << tt.input << std::endl;
@@ -182,7 +183,7 @@ IF (1 < 2)
 IF (1 > 2) 
     BEGIN IF 
     10
-    END IF)", 10},
+    END IF)", std::nullopt},
         {R"(
 IF (1 > 2) 
     BEGIN IF 
@@ -208,6 +209,7 @@ ELSE
         if (tt.expected.has_value()) {
             if (!testIntegerObject(evaluated, tt.expected.value())) {
                 std::cerr << "Test failed for input: " << tt.input << std::endl;
+                std::exit(EXIT_FAILURE);
             }
             std::cout << "Test passed for input: " << tt.input << std::endl;
         }
@@ -219,4 +221,46 @@ ELSE
     }
 
     std::cout << "TestIfElseExpressions passed." << std::endl;
+}
+
+void TestReturnStatementsV2() {
+    struct TestCase {
+        std::string input;
+        int64_t expected;
+    };
+
+    std::vector<TestCase> tests = {
+        {R"(RETURN 10)", 10},
+        {R"(
+RETURN 10
+9)", 10},
+        {R"(
+RETURN 2 * 5 
+9)", 10},
+        {R"(
+9 
+RETURN 2 * 5
+9)", 10},
+        {R"(
+IF (10 > 1)
+    BEGIN IF
+    IF (10 > 1)
+        BEGIN IF
+        RETURN 10
+        END IF
+    RETURN 1
+    END IF)", 10},
+    };
+
+    for (const auto& tt : tests) {
+        auto evaluated = testEval(tt.input);
+        if (!testIntegerObject(evaluated, tt.expected)) {
+            std::cerr << "Test failed for input: " << tt.input
+                << ".\nExpected " << tt.expected << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
+        std::cout << "Test passed for input: " << tt.input << std::endl;
+    }
+
+    std::cout << "TestReturnStatements passed." << std::endl;
 }
