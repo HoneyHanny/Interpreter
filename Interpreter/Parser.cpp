@@ -280,7 +280,6 @@ std::unique_ptr<Expression> Parser::parseGroupedExpression() {
 
 std::unique_ptr<Expression> Parser::parseIfExpression() {
     Tracer tracer("parseIfExpression");
-    std::cout << "called" << std::endl;
     //// Flag guards
     //if (!isFirstIfExpression) {
     //    // Skip parsing this IF expression if it's done parsing the original expression.

@@ -17,3 +17,4 @@ void TestEvalBooleanExpression();
 void TestBangOperator();
 void TestIfElseExpressions();
 void TestReturnStatementsV2();
+void TestErrorHandling();

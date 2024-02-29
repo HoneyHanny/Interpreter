@@ -264,3 +264,57 @@ IF (10 > 1)
 
     std::cout << "TestReturnStatements passed." << std::endl;
 }
+
+std::unique_ptr<Object> testEval(const std::string& input);
+
+void TestErrorHandling() {
+    struct TestCase {
+        std::string input;
+        std::string expectedMessage;
+    };
+
+    std::vector<TestCase> tests = {
+        {"5 + TRUE", "CODE ERROR - type mismatch: INTEGER + BOOLEAN"},
+        {R"(5 + TRUE
+            5)", "CODE ERROR - type mismatch: INTEGER + BOOLEAN"},
+        {"-TRUE", "CODE ERROR - unknown operator: -BOOLEAN"},
+        {"TRUE + FALSE", "CODE ERROR - unknown operator: BOOLEAN + BOOLEAN"},
+        {R"(5
+            TRUE + FALSE 
+            5)", "CODE ERROR - unknown operator: BOOLEAN + BOOLEAN"},
+        {R"(IF (10 > 1) 
+            BEGIN IF
+                TRUE + FALSE
+            END IF)", "CODE ERROR - unknown operator: BOOLEAN + BOOLEAN"},
+        {
+            R"(
+                IF (10 > 1) 
+                BEGIN IF
+                    IF (10 > 1) 
+                    BEGIN IF
+                        RETURN TRUE + FALSE
+                    END IF
+                    RETURN 1
+                END IF
+            )",
+            "CODE ERROR - unknown operator: BOOLEAN + BOOLEAN",
+        },
+    };
+
+    for (const auto& tt : tests) {
+        auto evaluated = testEval(tt.input);
+
+        auto errObj = dynamic_cast<ErrorObject*>(evaluated.get());
+        if (!errObj) {
+            std::cerr << "no error object returned. got=" << typeid(*evaluated).name() << std::endl;
+            //std::exit(EXIT_FAILURE);
+        }
+
+        if (errObj->Inspect() != tt.expectedMessage) {
+            std::cerr << "wrong error message. expected=\"" << tt.expectedMessage << "\", got=\"" << errObj->Inspect() << "\"" << std::endl;
+            //std::exit(EXIT_FAILURE);
+        }
+    }
+
+    std::cout << "TestErrorHandling passed." << std::endl;
+}

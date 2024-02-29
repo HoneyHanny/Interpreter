@@ -41,5 +41,6 @@ void ExecuteTestCases() {
     //TestEvalBooleanExpression();
     //TestBangOperator();
     //TestIfElseExpressions();
-    TestReturnStatementsV2();
+    //TestReturnStatementsV2();
+    TestErrorHandling();
 }

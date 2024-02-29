@@ -1,5 +1,32 @@
 #include "Evaluator.h"
 
+template<typename T>
+static void printArg(std::ostringstream& os, T&& arg) {
+    os << std::forward<T>(arg);
+}
+
+template<typename T, typename... Args>
+static void handleArgs(std::ostringstream& os, T&& firstArg, Args&&... args) {
+    printArg(os, std::forward<T>(firstArg));
+    if constexpr (sizeof...(args) > 0) {
+        os << " "; 
+        handleArgs(os, std::forward<Args>(args)...);
+    }
+}
+
+template<typename... Args>
+static void formatMessage(std::ostringstream& message, const std::string& format, Args... args) {
+    message << format << "";
+    handleArgs(message, std::forward<Args>(args)...);
+}
+
+template<typename... Args>
+static std::unique_ptr<ErrorObject> newError(const std::string& format, Args... args) {
+    std::ostringstream message;
+    formatMessage(message, format, std::forward<Args>(args)...);
+    return std::make_unique<ErrorObject>(message.str());
+}
+
 static std::unique_ptr<Object> evalProgram(const std::vector<std::unique_ptr<Statement>>& stmts) {
     std::unique_ptr<Object> result;
     for (const auto& statement : stmts) {
@@ -10,6 +37,9 @@ static std::unique_ptr<Object> evalProgram(const std::vector<std::unique_ptr<Sta
 
             if (auto returnValue = dynamic_cast<ReturnValue*>(result.get())) {
                 return std::unique_ptr<Object>(returnValue->TakeValue());
+            }
+            else if (auto error = dynamic_cast<ErrorObject*>(result.get())) {
+                return result;
             }
         }
         else {
@@ -37,7 +67,7 @@ static std::unique_ptr<Object> evalMinusPrefixOperatorExpression(std::unique_ptr
     IntegerObject* integerRight = dynamic_cast<IntegerObject*>(right.get());
 
     if (!integerRight) {
-        return std::make_unique<NullObject>();
+        return newError("unknown operator: -", right->Type());
     }
 
     return std::make_unique<IntegerObject>(-integerRight->Value);
@@ -51,7 +81,7 @@ static std::unique_ptr<Object> evalPrefixExpression(const std::string& operator_
         return evalMinusPrefixOperatorExpression(std::move(right));
     }
     // Default case returns a unique pointer to a new NullObject
-    return std::make_unique<NullObject>();
+    return newError("unknown operator: ", operator_, right->Type());
 }
 
 static std::unique_ptr<Object> evalIntegerInfixExpression(
@@ -90,11 +120,7 @@ static std::unique_ptr<Object> evalIntegerInfixExpression(
     else if (operator_ == "<>") {
         return std::make_unique<BooleanObject>(leftVal != rightVal);
     }
-    else {
-        // TODO: Maybe throw an error here
-        // For unsupported operators, return NullObject
-        return std::make_unique<NullObject>(); 
-    }
+    return newError("unknown operator: ", left->Type(), operator_, right->Type());  
 }
 
 static std::unique_ptr<Object> evalInfixExpression(
@@ -117,9 +143,11 @@ static std::unique_ptr<Object> evalInfixExpression(
         auto rightVal = dynamic_cast<BooleanObject*>(right.get())->Value;
         return std::make_unique<BooleanObject>(leftVal != rightVal);
     }
-    // Handle other types and combinations...
+    else if (left->Type() != right->Type()) {
+        return newError("type mismatch: ", left->Type(), operator_, right->Type());
+    }
     else {
-        return std::make_unique<NullObject>();
+        return newError("unknown operator: ", left->Type(), operator_, right->Type());
     }
 }
 
@@ -159,8 +187,11 @@ static std::unique_ptr<Object> evalBlockStatement(const BlockStatement* block) {
     for (const auto& statement : block->Statements) {
         result = Eval(statement.get());
 
-        if (result != nullptr && result->Type() == ObjectTypeToString(ObjectType_::RETURN_VALUE_OBJ)) {
-            return result;
+        if (result != nullptr) {
+            std::string rt = result->Type();
+            if (rt == ObjectTypeToString(ObjectType_::RETURN_VALUE_OBJ) || rt == ObjectTypeToString(ObjectType_::ERROR_OBJ)) {
+                return result;
+            }
         }
     }
 
