@@ -27,6 +27,13 @@ static std::unique_ptr<ErrorObject> newError(const std::string& format, Args... 
     return std::make_unique<ErrorObject>(message.str());
 }
 
+static bool isError(const std::unique_ptr<Object>& obj) {
+    if (obj) {
+        return obj->Type() == ObjectTypeToString(ObjectType_::ERROR_OBJ);
+    }
+    return false;
+
+}
 static std::unique_ptr<Object> evalProgram(const std::vector<std::unique_ptr<Statement>>& stmts) {
     std::unique_ptr<Object> result;
     for (const auto& statement : stmts) {
@@ -169,6 +176,9 @@ static bool isTruthy(const std::unique_ptr<Object>& obj) {
 
 static std::unique_ptr<Object> evalIfExpression(const IfExpression* ie) {
     auto condition = Eval(ie->Condition.get());
+    if (isError(condition)) {
+        return condition;
+    }
 
     if (isTruthy(condition)) {
         return Eval(ie->Consequence.get());
@@ -214,11 +224,20 @@ std::unique_ptr<Object> Eval(const Node* node) {
     }
     else if (auto prefixExpr = dynamic_cast<const PrefixExpression*>(node)) {
         auto right = Eval(prefixExpr->Right.get());
+        if (isError(right)) {
+            return right;
+        }
         return evalPrefixExpression(prefixExpr->Operator, std::move(right));
     }
     else if (auto infixExpr = dynamic_cast<const InfixExpression*>(node)) {
         auto left = Eval(infixExpr->Left.get());
+        if (isError(left)) {
+            return left;
+        }
         auto right = Eval(infixExpr->Right.get());
+        if (isError(right)) {
+            return right;
+        }
         return evalInfixExpression(infixExpr->Operator, std::move(left), std::move(right));
     }
     else if (auto blockStmt = dynamic_cast<const BlockStatement*>(node)) {
@@ -229,6 +248,9 @@ std::unique_ptr<Object> Eval(const Node* node) {
     }
     else if (const auto* returnStmt = dynamic_cast<const ReturnStatement*>(node)) {
         auto val = Eval(returnStmt->ReturnValue.get());
+        if (isError(val)) {
+            return val;
+        }
         return std::make_unique<ReturnValue>(std::move(val));
     }
     return nullptr;
