@@ -161,7 +161,7 @@ void TestIdentifierExpression() {
         std::exit(EXIT_FAILURE);
     }
 
-    auto ident = dynamic_cast<Identifier*>(stmt->Expression.get());
+    auto ident = dynamic_cast<Identifier*>(stmt->Expression_.get());
     if (!ident) {
         std::cerr << "exp not Identifier." << std::endl;
         std::exit(EXIT_FAILURE);
@@ -204,7 +204,7 @@ void TestNumericalLiteralExpression() {
         std::exit(EXIT_FAILURE);
     }
 
-    auto literal = dynamic_cast<NumericalLiteral*>(stmt->Expression.get());
+    auto literal = dynamic_cast<NumericalLiteral*>(stmt->Expression_.get());
     if (!literal) {
         std::cerr << "TestNumericalLiteralExpression failed: exp not IntegerLiteral." << std::endl;
         std::exit(EXIT_FAILURE);
@@ -272,7 +272,7 @@ void TestParsingPrefixExpressions() {
             std::exit(EXIT_FAILURE);
         }
 
-        auto exp = dynamic_cast<PrefixExpression*>(stmt->Expression.get());
+        auto exp = dynamic_cast<PrefixExpression*>(stmt->Expression_.get());
         if (!exp) {
             std::cerr << "stmt is not PrefixExpression." << std::endl;
             std::exit(EXIT_FAILURE);
@@ -328,7 +328,7 @@ void TestParsingInfixExpressions() {
             std::exit(EXIT_FAILURE);
         }
 
-        auto exp = dynamic_cast<InfixExpression*>(stmt->Expression.get());
+        auto exp = dynamic_cast<InfixExpression*>(stmt->Expression_.get());
         if (!exp) {
             std::cerr << "TestParsingInfixExpressions failed: exp is not InfixExpression." << std::endl;
             std::exit(EXIT_FAILURE);
@@ -434,7 +434,7 @@ void TestBooleanExpression() {
         std::exit(EXIT_FAILURE);
     }
 
-    auto b = dynamic_cast<Boolean*>(stmt->Expression.get());
+    auto b = dynamic_cast<Boolean*>(stmt->Expression_.get());
     if (!b) {
         std::cerr << "exp not boolean." << std::endl;
         std::exit(EXIT_FAILURE);
@@ -475,9 +475,9 @@ void TestIfExpression() {
         std::exit(EXIT_FAILURE);
     }
 
-    std::cout << stmt->Expression.get()->String() << std::endl;
+    std::cout << stmt->Expression_.get()->String() << std::endl;
 
-    auto exp = dynamic_cast<IfExpression*>(stmt->Expression.get());
+    auto exp = dynamic_cast<IfExpression*>(stmt->Expression_.get());
     if (!exp) {
         std::cerr << "Statement's expression is not IfExpression." << std::endl;
         std::exit(EXIT_FAILURE);
@@ -499,7 +499,7 @@ void TestIfExpression() {
         std::exit(EXIT_FAILURE);
     }
 
-    if (!testIdentifier(consequence->Expression, "x")) {
+    if (!testIdentifier(consequence->Expression_, "x")) {
         std::cerr << "Identifier test failed." << std::endl;
         std::exit(EXIT_FAILURE);
     }
@@ -544,9 +544,9 @@ void TestNestedIfExpression() {
         std::exit(EXIT_FAILURE);
     }
 
-    std::cout << "\nIF: \n" << stmt->Expression.get()->String() << std::endl;
+    std::cout << "\nIF: \n" << stmt->Expression_.get()->String() << std::endl;
 
-    auto exp = dynamic_cast<IfExpression*>(stmt->Expression.get());
+    auto exp = dynamic_cast<IfExpression*>(stmt->Expression_.get());
     if (!exp) {
         std::cerr << "Statement's expression is not IfExpression." << std::endl;
         std::exit(EXIT_FAILURE);
@@ -572,7 +572,7 @@ void TestNestedIfExpression() {
         std::exit(EXIT_FAILURE);
     }
 
-    auto nestedStmt = dynamic_cast<IfExpression*>(stmtInner->Expression.get());
+    auto nestedStmt = dynamic_cast<IfExpression*>(stmtInner->Expression_.get());
     if (!nestedStmt) {
         std::cerr << "Consequence's statement is not an IfExpression for nested IF." << std::endl;
         std::exit(EXIT_FAILURE);
@@ -592,7 +592,7 @@ void TestNestedIfExpression() {
     }
 
     auto nestedConsequence = dynamic_cast<ExpressionStatement*>(nestedStmt->Consequence->Statements[0].get());
-    if (!nestedConsequence || !testIdentifier(nestedConsequence->Expression, "x")) {
+    if (!nestedConsequence || !testIdentifier(nestedConsequence->Expression_, "x")) {
         std::cerr << "Nested IF's consequence first statement is not ExpressionStatement or identifier test failed." << std::endl;
         std::exit(EXIT_FAILURE);
     }
@@ -639,7 +639,7 @@ void TestNestedIfInElseExpression() {
         std::exit(EXIT_FAILURE);
     }
 
-    auto exp = dynamic_cast<IfExpression*>(stmt->Expression.get());
+    auto exp = dynamic_cast<IfExpression*>(stmt->Expression_.get());
     if (!exp) {
         std::cerr << "Statement's expression is not IfExpression." << std::endl;
         std::exit(EXIT_FAILURE);
@@ -665,7 +665,7 @@ void TestNestedIfInElseExpression() {
         std::exit(EXIT_FAILURE);
     }
 
-    auto elseStmt = dynamic_cast<IfExpression*>(stmtInner->Expression.get());
+    auto elseStmt = dynamic_cast<IfExpression*>(stmtInner->Expression_.get());
     if (!elseStmt) {
         std::cerr << "Alternative block is not an IfExpression." << std::endl;
         std::exit(EXIT_FAILURE);
@@ -677,7 +677,7 @@ void TestNestedIfInElseExpression() {
     }
 
     auto nestedConsequence = dynamic_cast<ExpressionStatement*>(elseStmt->Consequence->Statements[0].get());
-    if (!nestedConsequence || !testIdentifier(nestedConsequence->Expression, "x")) {
+    if (!nestedConsequence || !testIdentifier(nestedConsequence->Expression_, "x")) {
         std::cerr << "Nested IF in ELSE's consequence first statement is not ExpressionStatement or identifier test failed." << std::endl;
         std::exit(EXIT_FAILURE);
     }
@@ -712,7 +712,7 @@ void TestIfElseExpression() {
         std::exit(EXIT_FAILURE);
     }
 
-    auto exp = dynamic_cast<IfExpression*>(stmt->Expression.get());
+    auto exp = dynamic_cast<IfExpression*>(stmt->Expression_.get());
     if (!exp) {
         std::cerr << "Statement's expression is not IfExpression." << std::endl;
         std::exit(EXIT_FAILURE);
@@ -734,7 +734,7 @@ void TestIfElseExpression() {
         std::exit(EXIT_FAILURE);
     }
 
-    if (!testIdentifier(consequence->Expression, "x")) {
+    if (!testIdentifier(consequence->Expression_, "x")) {
         std::cerr << "Identifier test failed." << std::endl;
         std::exit(EXIT_FAILURE);
     }
@@ -750,7 +750,7 @@ void TestIfElseExpression() {
         std::exit(EXIT_FAILURE);
     }
 
-    if (!testIdentifier(alternative->Expression, "some_var")) {
+    if (!testIdentifier(alternative->Expression_, "some_var")) {
         std::cerr << "Identifier test failed." << std::endl;
         std::exit(EXIT_FAILURE);
     }
@@ -861,7 +861,7 @@ END FUNCTION)";
         std::exit(EXIT_FAILURE);
     }
 
-    auto function = dynamic_cast<FunctionLiteral*>(stmt->Expression.get());
+    auto function = dynamic_cast<FunctionLiteral*>(stmt->Expression_.get());
     if (!function) {
         std::cerr << "Statement's expression is not FunctionLiteral." << std::endl;
         std::exit(EXIT_FAILURE);
@@ -882,7 +882,7 @@ END FUNCTION)";
         std::cerr << "Function body's statement is not ExpressionStatement." << std::endl;
         std::exit(EXIT_FAILURE);
     }
-    testInfixExpression(bodyStmt->Expression, "x", "+", "y");
+    testInfixExpression(bodyStmt->Expression_, "x", "+", "y");
 
     std::cout << "TestFunctionLiteralParsing passed." << std::endl;
 }
@@ -926,7 +926,7 @@ END FUNCTION
             std::cerr << "Statement is not an ExpressionStatement.\n"; 
         }
 
-        auto function = dynamic_cast<FunctionLiteral*>(stmt->Expression.get());
+        auto function = dynamic_cast<FunctionLiteral*>(stmt->Expression_.get());
         if (!function) {
             std::cerr << "Expression is not a FunctionLiteral.\n";
             continue;
@@ -965,7 +965,7 @@ void TestCallExpressionParsing() {
         std::exit(EXIT_FAILURE);
     }
 
-    auto exp = dynamic_cast<CallExpression*>(stmt->Expression.get());
+    auto exp = dynamic_cast<CallExpression*>(stmt->Expression_.get());
     if (!exp) {
         std::cerr << "Expression is not a CallExpression.\n";
         std::exit(EXIT_FAILURE);

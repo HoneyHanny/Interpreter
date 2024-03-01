@@ -6,8 +6,9 @@ static std::unique_ptr<Object> testEval(const std::string& input) {
     Parser parser(std::move(lexer));
     
     auto program = parser.ParseProgram();
+    auto env = std::make_shared<Environment>();
 
-    return Eval(program.get());
+    return Eval(program.get(), env);
 }
 
 static bool testIntegerObject(const std::unique_ptr<Object>& obj, int64_t expected) {
@@ -299,6 +300,10 @@ void TestErrorHandling() {
             )",
             "CODE ERROR - unknown operator: BOOLEAN + BOOLEAN",
         },
+        {
+            "foobar",
+            "CODE ERROR - identifier not found: foobar",
+        },
     };
 
     for (const auto& tt : tests) {
@@ -307,14 +312,151 @@ void TestErrorHandling() {
         auto errObj = dynamic_cast<ErrorObject*>(evaluated.get());
         if (!errObj) {
             std::cerr << "no error object returned. got=" << typeid(*evaluated).name() << std::endl;
-            //std::exit(EXIT_FAILURE);
+            std::exit(EXIT_FAILURE);
         }
 
         if (errObj->Inspect() != tt.expectedMessage) {
             std::cerr << "wrong error message. expected=\"" << tt.expectedMessage << "\", got=\"" << errObj->Inspect() << "\"" << std::endl;
-            //std::exit(EXIT_FAILURE);
+            std::exit(EXIT_FAILURE);
         }
+
+        std::cout << "Test passed for input: " << tt.input << std::endl;
     }
 
     std::cout << "TestErrorHandling passed." << std::endl;
+}
+
+
+void TestTypedDeclStatementsV2() {
+    struct TestCase {
+        std::string input;
+        int64_t expected;
+    };
+
+    std::vector<TestCase> tests = {
+        {R"(INT a = 5 
+            a)", 5},
+        {R"(INT a = 5 * 5
+            a)", 25},
+        {R"(let a = 5
+            let b = a
+            b)", 5},
+        {R"(INT a = 5
+            INT b = a
+            INT c = a + b + 5 
+            c)", 15},
+    };
+
+    for (const auto& test : tests) {
+        auto evaluated = testEval(test.input);
+        if (!testIntegerObject(evaluated, test.expected)) {
+            std::cerr << "Test failed for input: " << test.input << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
+        else {
+            std::cout << "Test passed for input: " << test.input << std::endl;
+        }
+    }
+}
+
+void TestFunctionObject() {
+    std::string input = R"(FUNCTION foo(INT x) INT: 
+                            BEGIN FUNCTION
+                            x + 2
+                            END FUNCTION)";
+
+    auto evaluated = testEval(input); // Assuming testEval returns std::unique_ptr<Object>
+    Function* fn = dynamic_cast<Function*>(evaluated.get());
+
+    if (!fn) {
+        std::cerr << "TestFunctionObject failed: object is not Function." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (fn->Parameters.size() != 1) {
+        std::cerr << "TestFunctionObject failed: function has wrong number of parameters. Expected 1, got "
+            << fn->Parameters.size() << "." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+    
+    if (fn->Parameters[0]->String() != "INT x") {
+        std::cerr << "TestFunctionObject failed: parameter is not 'x'. Got "
+            << fn->Parameters[0]->String() << "." << std::endl;
+        return;
+    }
+
+    std::string expectedBody = "(x + 2)";
+
+    // Assuming BlockStatement has an Inspect method that serializes the block's content.
+    if (fn->Body->String() != expectedBody) {
+        std::cerr << "TestFunctionObject failed: body does not match expected. Expected "
+            << expectedBody << ", got " << fn->Body->String() << "." << std::endl;
+        return;
+    }
+
+    std::cout << "TestFunctionObject passed." << std::endl;
+}
+
+void TestFunctionApplication() {
+    struct Test {
+        std::string input;
+        int64_t expected;
+    };
+
+    std::vector<Test> tests = {
+        {R"(FUNCTION identity(INT x) INT: 
+            BEGIN FUNCTION 
+            x
+            END FUNCTION 
+            
+            identity: 5
+        )", 5},
+        {R"(FUNCTION identity(INT x) INT: 
+            BEGIN FUNCTION 
+            RETURN x
+            END FUNCTION 
+            
+            identity: 5
+        )", 5},
+        {R"(FUNCTION identity(INT x) INT: 
+            BEGIN FUNCTION 
+            x
+            END FUNCTION 
+            
+            identity: 5
+        )", 5},
+        {R"(FUNCTION double(INT x) INT: 
+            BEGIN FUNCTION 
+            RETURN x * 2
+            END FUNCTION 
+            
+            double: 5
+        )", 10},
+        {R"(FUNCTION add(INT x, INT y) INT: 
+            BEGIN FUNCTION 
+            RETURN x + y
+            END FUNCTION 
+            
+            add: 5, 5
+        )", 10},
+        {R"(FUNCTION add(INT x, INT y) INT: 
+            BEGIN FUNCTION 
+            RETURN x + y
+            END FUNCTION 
+            
+            add: 5 + 5, add: 5, 5   
+        )", 20},
+    };
+
+    for (const auto& test : tests) {
+        auto evaluated = testEval(test.input);
+        std::cout << "Evaluated: " << evaluated->Inspect() << std::endl;
+        if (!testIntegerObject(evaluated, test.expected)) {
+            std::cerr << "Test failed for input: " << test.input << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
+        else {
+            std::cout << "Test passed for input: " << test.input << std::endl;
+        }
+    }
 }

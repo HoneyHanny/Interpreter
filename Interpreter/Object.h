@@ -1,6 +1,14 @@
 #pragma once
+
+class Environment;
+
+#include "AST.h"
+
 #include <iostream>
+#include <vector>
 #include <string>
+#include <sstream>
+#include <memory>
 
 using ObjectType = std::string;
 
@@ -10,6 +18,7 @@ enum class ObjectType_ {
     NULL_OBJ,
     RETURN_VALUE_OBJ,
     ERROR_OBJ,
+    FUNCTION_OBJ,
     // Add other types as needed
 };
 
@@ -19,6 +28,7 @@ public:
 
     virtual ObjectType Type() const = 0; 
     virtual std::string Inspect() const = 0; 
+    virtual std::unique_ptr<Object> clone() const = 0;
 };
 
 inline std::string ObjectTypeToString(ObjectType_ type) {
@@ -28,6 +38,7 @@ inline std::string ObjectTypeToString(ObjectType_ type) {
         case ObjectType_::NULL_OBJ: return "NULL";
         case ObjectType_::RETURN_VALUE_OBJ: return "RETURN";
         case ObjectType_::ERROR_OBJ: return "ERROR";
+        case ObjectType_::FUNCTION_OBJ: return "FUNCTION";
             // Add cases for other types
         default: return "UNKNOWN";
     }
@@ -46,6 +57,10 @@ public:
     std::string Inspect() const override {
         return std::to_string(Value);
     }
+
+    std::unique_ptr<Object> clone() const override {
+        return std::make_unique<IntegerObject>(Value);
+    }
 };
 
 class BooleanObject : public Object {
@@ -61,6 +76,10 @@ public:
     std::string Inspect() const override {
         return std::to_string(Value);
     }
+
+    std::unique_ptr<Object> clone() const override {
+        return std::make_unique<BooleanObject>(Value);
+    }
 };
 
 class NullObject : public Object {
@@ -74,6 +93,10 @@ public:
 
     std::string Inspect() const override {
         return "NULL";
+    }
+
+    std::unique_ptr<Object> clone() const override {
+        return std::make_unique<NullObject>();
     }
 };
 
@@ -94,6 +117,10 @@ public:
     std::unique_ptr<Object> TakeValue() {
         return std::move(Value);
     }
+
+    std::unique_ptr<Object> clone() const override {
+        return std::make_unique<ReturnValue>(Value->clone());
+    }
 };
 
 class ErrorObject : public Object {
@@ -108,5 +135,54 @@ public:
 
     std::string Inspect() const override {
         return "CODE ERROR - " + Message;
+    }
+
+    std::unique_ptr<Object> clone() const override {
+        return std::make_unique<ErrorObject>(Message);
+    }
+};
+
+class Function : public Object {
+public:
+    Token ReturnType;
+    std::unique_ptr<Expression> CallName;
+    std::vector<std::unique_ptr<TypedDeclStatement>> Parameters;
+    std::unique_ptr<BlockStatement> Body;
+    std::shared_ptr<Environment> Env; 
+
+    // Constructor with rvalue references for move semantics
+    Function(const Token& returnType, std::unique_ptr<Expression> callName, std::vector<std::unique_ptr<TypedDeclStatement>> params, std::unique_ptr<BlockStatement> body, std::shared_ptr<Environment> env)
+        : ReturnType(returnType), CallName(std::move(callName)), Parameters(std::move(params)), Body(std::move(body)), Env(std::move(env)) {}
+
+    ObjectType Type() const override {
+        return ObjectTypeToString(ObjectType_::FUNCTION_OBJ);
+    }
+
+    std::string Inspect() const override {
+        std::ostringstream out;
+
+        out << "FUNCTION" << " " << CallName->TokenLiteral() << " (";
+        for (size_t i = 0; i < Parameters.size(); ++i) {
+            if (i > 0) out << ", ";
+            out << Parameters[i].get()->String();
+        }
+        out << ") " << ReturnType.Type << ":\n";
+        out << "BEGIN FUNCTION\n";
+        out << Body->String();
+        out << "\nEND FUNCTION\n";
+
+        return out.str();
+    }
+
+    std::unique_ptr<Object> clone() const override {
+        std::vector<std::unique_ptr<TypedDeclStatement>> clonedParams;
+        for (const auto& param : Parameters) {
+            clonedParams.push_back(std::unique_ptr<TypedDeclStatement>(static_cast<TypedDeclStatement*>(param->clone().release())));
+        }
+
+        auto clonedBody = std::unique_ptr<BlockStatement>(static_cast<BlockStatement*>(Body->clone().release()));
+        auto clonedCallName = CallName ? std::unique_ptr<Expression>(static_cast<Expression*>(CallName->clone().release())) : nullptr;
+
+        return std::make_unique<Function>(ReturnType, std::move(clonedCallName), std::move(clonedParams), std::move(clonedBody), Env);
     }
 };

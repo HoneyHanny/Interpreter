@@ -18,3 +18,5 @@ void TestBangOperator();
 void TestIfElseExpressions();
 void TestReturnStatementsV2();
 void TestErrorHandling();
+void TestFunctionObject();
+void TestFunctionApplication();

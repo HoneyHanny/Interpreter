@@ -42,5 +42,7 @@ void ExecuteTestCases() {
     //TestBangOperator();
     //TestIfElseExpressions();
     //TestReturnStatementsV2();
-    TestErrorHandling();
+    //TestErrorHandling();
+    //TestFunctionObject();
+    TestFunctionApplication();
 }

@@ -107,7 +107,7 @@ std::unique_ptr<ExpressionStatement> Parser::parseExpressionStatement() {
 
     auto stmt = std::make_unique<ExpressionStatement>(curToken);
 
-    stmt->Expression = parseExpression(Precedence::LOWEST);
+    stmt->Expression_ = parseExpression(Precedence::LOWEST);
 
     if (peekTokenIs(NEWLINE)) {
         nextToken();
@@ -372,23 +372,25 @@ std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
     Tracer tracer("parseFunctionLiteral");
 
     // Flag guards
-    if (!isFirstFunctionLiteral) {
-        // Skip parsing this IF expression if it's done parsing the original expression.
-        std::cerr << "Skipping FUNCTION expression as it's not the first." << std::endl;
-        return nullptr;
-    }
+    //if (!isFirstFunctionLiteral) {
+    //    // Skip parsing this IF expression if it's done parsing the original expression.
+    //    std::cerr << "Skipping FUNCTION expression as it's not the first." << std::endl;
+    //    return nullptr;
+    //}
 
-    isFirstFunctionLiteral = false; // Set flag to false so that it skips other IFs
+    //isFirstFunctionLiteral = false; // Set flag to false so that it skips other IFs
 
     auto token = curToken; 
     auto type = peekToken;
-    auto lit = std::make_unique<FunctionLiteral>(token, type);
+    auto lit = std::make_unique<FunctionLiteral>(token);
 
     if (!expectPeek(IDENT)) {
         std::cerr << lit->TokenLiteral() << std::endl;
         std::cerr << "Failed to find IDENT, peekToken: " << peekToken.Type << std::endl;
         return nullptr;
     }
+
+    lit->CallName = parseIdentifier();
 
     if (!expectPeek(LPAREN)) {
         std::cerr << lit->TokenLiteral() << std::endl;
@@ -408,6 +410,8 @@ std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
     }
 
     nextToken();
+
+    lit->type = curToken;
 
     if (!expectPeek(COLON)) {
         std::cerr << lit->TokenLiteral() << std::endl;
@@ -438,7 +442,7 @@ std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
     lit->Body = parseBlockStatement();
 
     // Set flags to true as it's done parsing the entire control flow.
-    isFirstFunctionLiteral = true;
+    //isFirstFunctionLiteral = true;
 
     return lit;
 }

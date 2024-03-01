@@ -15,11 +15,13 @@ public:
 class Statement : public Node {
 public:
     virtual void statementNode() = 0;
+    virtual std::unique_ptr<Statement> clone() const = 0;
 };
 
 class Expression : public Node {
 public:
     virtual void expressionNode() = 0;
+    virtual std::unique_ptr<Expression> clone() const = 0;
 };
 
 class Program : public Node {
@@ -49,6 +51,9 @@ public:
     Token token;
     std::string Value;
 
+    Identifier(const Token& token)
+        : token(token) {}
+
     Identifier(const Token& token, const std::string& value)
         : token(token), Value(value) {}
 
@@ -56,6 +61,10 @@ public:
 
     void expressionNode() override {}
     std::string TokenLiteral() const override { return token.Literal; }
+
+    std::unique_ptr<Expression> clone() const override {
+        return std::make_unique<Identifier>(token, Value);
+    }
 };
 
 // Subtree structure: <TYPE> <IDENT> <ASSIGN> <EXPRESSION>
@@ -67,9 +76,14 @@ public:
 
     TypedDeclStatement(const Token& token)
         : token(token) {}
+
+    TypedDeclStatement(const Token& token, std::unique_ptr<Identifier> name)
+        : token(token), Name(std::move(name)) {}
     
-    // Testing constructor. Do not use in actual Parser.
     TypedDeclStatement(const Token& token, std::unique_ptr<Identifier> name, std::unique_ptr<Identifier> value)
+        : token(token), Name(std::move(name)), Value(std::move(value)) {}
+
+    TypedDeclStatement(const Token& token, std::unique_ptr<Identifier> name, std::unique_ptr<Expression> value)
         : token(token), Name(std::move(name)), Value(std::move(value)) {}
 
     std::string String() const override {
@@ -88,6 +102,12 @@ public:
 
     void statementNode() override {}
     std::string TokenLiteral() const override { return token.Literal; }
+
+    std::unique_ptr<Statement> clone() const override {
+        auto nameClone = std::make_unique<Identifier>(*Name);
+        auto valueClone = Value ? std::unique_ptr<Expression>(static_cast<Expression*>(Value->clone().release())) : nullptr;
+        return std::make_unique<TypedDeclStatement>(token, std::move(nameClone), std::move(valueClone));
+    }
 };
 
 // Subtree structure: <RETURN> <EXPRESSION>
@@ -98,6 +118,9 @@ public:
 
     ReturnStatement(const Token& token)
         : token(token) {}
+
+    ReturnStatement(const Token& token, std::unique_ptr<Expression> returnValue)
+        : token(token), ReturnValue(std::move(returnValue)) {}
 
     std::string String() const override {
         std::ostringstream out;
@@ -113,13 +136,18 @@ public:
 
     void statementNode() override {}
     std::string TokenLiteral() const override { return token.Literal; }
+
+    std::unique_ptr<Statement> clone() const override {
+        auto returnValueClone = ReturnValue ? std::unique_ptr<Expression>(static_cast<Expression*>(ReturnValue->clone().release())) : nullptr;
+        return std::make_unique<ReturnStatement>(token, std::move(returnValueClone));
+    }
 };
 
 // Subtree structure: <EXPRESSION> ... <EXPRESSION> 
 class ExpressionStatement : public Statement {
 public:
     Token token; // <First token of the expression>
-    std::unique_ptr<Expression> Expression; // <EXPRESSION>
+    std::unique_ptr<Expression> Expression_; // <EXPRESSION>
 
     ExpressionStatement(const Token& token)
         : token(token) {}
@@ -127,8 +155,8 @@ public:
     std::string String() const override {
         std::ostringstream out;
 
-        if (Expression != nullptr) {
-            out << Expression->String();
+        if (Expression_ != nullptr) {
+            out << Expression_->String();
         }
         else {
             out << "";
@@ -139,6 +167,13 @@ public:
 
     void statementNode() override {}
     std::string TokenLiteral() const override { return token.Literal; }
+
+    std::unique_ptr<Statement> clone() const override {
+        auto clonedExpression = std::unique_ptr<Expression>(static_cast<Expression*>(Expression_->clone().release()));
+        auto clonedStmt = std::make_unique<ExpressionStatement>(token);
+        clonedStmt->Expression_ = std::move(clonedExpression);
+        return clonedStmt;
+    }
 };
 
 // Subtree structure: <EXPRESSION>
@@ -150,10 +185,17 @@ public:
     NumericalLiteral(const Token& token)
         : token(token) {}
 
+    NumericalLiteral(const Token& token, const int value)
+        : token(token), Value(value) {}
+
     std::string String() const override { return token.Literal; }
 
     void expressionNode() override {}
     std::string TokenLiteral() const override { return token.Literal; }
+
+    std::unique_ptr<Expression> clone() const override {
+        return std::make_unique<NumericalLiteral>(token, Value);
+    }
 };
 
 // Subtree structure: <prefix operator><EXPRESSION>;
@@ -179,6 +221,13 @@ public:
 
     void expressionNode() override {}
     std::string TokenLiteral() const override { return token.Literal; }
+
+    std::unique_ptr<Expression> clone() const override {
+        auto clonedRight = std::unique_ptr<Expression>(static_cast<Expression*>(Right->clone().release()));
+        auto clonedExpr = std::make_unique<PrefixExpression>(token, Operator);
+        clonedExpr->Right = std::move(clonedRight);
+        return clonedExpr;
+    }
 };
 
 class InfixExpression : public Expression {
@@ -206,6 +255,13 @@ public:
     }
 
     void expressionNode() override {}
+
+    std::unique_ptr<Expression> clone() const override {
+        auto clonedLeft = std::unique_ptr<Expression>(static_cast<Expression*>(Left->clone().release()));
+        auto clonedRight = std::unique_ptr<Expression>(static_cast<Expression*>(Right->clone().release()));
+        auto clonedExpr = std::make_unique<InfixExpression>(token, std::move(clonedLeft), Operator, std::move(clonedRight));
+        return clonedExpr;
+    }
 };
 
 class Boolean : public Expression {
@@ -228,11 +284,15 @@ public:
     std::string String() const override {
         return token.Literal; 
     }
+
+    std::unique_ptr<Expression> clone() const override {
+        return std::make_unique<Boolean>(token, Value);
+    }
 };
 
 class BlockStatement : public Statement {
 public:
-    Token token; // The '{' token
+    Token token; 
     std::vector<std::unique_ptr<Statement>> Statements;
 
     BlockStatement(const Token& tok) : token(tok) {}
@@ -249,6 +309,14 @@ public:
             out << stmt->String();
         }
         return out.str();
+    }
+
+    std::unique_ptr<Statement> clone() const override {
+        auto clonedBlock = std::make_unique<BlockStatement>(token);
+        for (const auto& stmt : Statements) {
+            clonedBlock->Statements.push_back(std::unique_ptr<Statement>(stmt->clone().release()));
+        }
+        return clonedBlock;
     }
 };
 
@@ -281,16 +349,35 @@ public:
 
         return out.str();
     }
+
+    std::unique_ptr<Expression> clone() const override {
+        auto clonedCondition = std::unique_ptr<Expression>(static_cast<Expression*>(Condition->clone().release()));
+        auto clonedConsequence = std::unique_ptr<BlockStatement>(static_cast<BlockStatement*>(Consequence->clone().release()));
+        auto clonedAlternative = Alternative ? std::unique_ptr<BlockStatement>(static_cast<BlockStatement*>(Alternative->clone().release())) : nullptr;
+
+        auto clonedIfExpr = std::make_unique<IfExpression>(token);
+        clonedIfExpr->Condition = std::move(clonedCondition);
+        clonedIfExpr->Consequence = std::move(clonedConsequence);
+        clonedIfExpr->Alternative = std::move(clonedAlternative);
+
+        return clonedIfExpr;
+    }
 };
 
 class FunctionLiteral : public Expression {
 public:
     Token token;
     Token type;
+    std::unique_ptr<Expression> CallName;
     std::vector<std::unique_ptr<TypedDeclStatement>> Parameters;
     std::unique_ptr<BlockStatement> Body;
 
+    FunctionLiteral(const Token& tok) : token(tok) {}
+
     FunctionLiteral(const Token& tok, const Token& type) : token(tok), type(type) {}
+
+    FunctionLiteral(const Token& tok, const Token& typ, std::unique_ptr<Expression> callName, std::vector<std::unique_ptr<TypedDeclStatement>>&& params, std::unique_ptr<BlockStatement>&& body)
+        : token(tok), type(typ), CallName(std::move(callName)), Parameters(std::move(params)), Body(std::move(body)) {}
 
     void expressionNode() override {}
 
@@ -306,24 +393,36 @@ public:
             params.push_back(p->String());
         }
 
-        out << TokenLiteral();
-        out << "(";
+        out << TokenLiteral() << " " << CallName->TokenLiteral() << " (";
         for (size_t i = 0; i < params.size(); ++i) {
             out << params[i];
             if (i < params.size() - 1) {
                 out << ", ";
             }
         }
-        out << ") ";
+        out << ") " << type.Type << ":\n";
+        out << "BEGIN FUNCTION\n";
         out << Body->String();
+        out << "\nEND FUNCTION\n";
 
         return out.str();
+    }
+
+    std::unique_ptr<Expression> clone() const override {
+        std::vector<std::unique_ptr<TypedDeclStatement>> clonedParams;
+        for (const auto& param : Parameters) {
+            clonedParams.push_back(std::unique_ptr<TypedDeclStatement>(static_cast<TypedDeclStatement*>(param->clone().release())));
+        }
+        auto clonedBody = std::unique_ptr<BlockStatement>(static_cast<BlockStatement*>(Body->clone().release()));
+        auto clonedCallName = CallName ? std::unique_ptr<Expression>(static_cast<Expression*>(CallName->clone().release())) : nullptr;
+
+        return std::make_unique<FunctionLiteral>(token, type, std::move(clonedCallName), std::move(clonedParams), std::move(clonedBody));
     }
 };
 
 class CallExpression : public Expression {
 public:
-    Token token; // The '(' token
+    Token token;
     std::unique_ptr<Expression> Function; // Can be Identifier or FunctionLiteral
     std::vector<std::unique_ptr<Expression>> Arguments;
 
@@ -344,15 +443,28 @@ public:
         }
 
         out << Function->String();
-        out << "(";
+        out << ": ";
         for (size_t i = 0; i < args.size(); ++i) {
             out << args[i];
             if (i < args.size() - 1) {
                 out << ", ";
             }
         }
-        out << ")";
 
         return out.str();
+    }
+
+    std::unique_ptr<Expression> clone() const override {
+        auto clonedFunction = std::unique_ptr<Expression>(static_cast<Expression*>(Function->clone().release()));
+        std::vector<std::unique_ptr<Expression>> clonedArgs;
+        for (const auto& arg : Arguments) {
+            clonedArgs.push_back(std::unique_ptr<Expression>(static_cast<Expression*>(arg->clone().release())));
+        }
+
+        auto clonedCallExpr = std::make_unique<CallExpression>(token);
+        clonedCallExpr->Function = std::move(clonedFunction);
+        clonedCallExpr->Arguments = std::move(clonedArgs);
+
+        return clonedCallExpr;
     }
 };

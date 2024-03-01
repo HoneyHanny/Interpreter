@@ -8,6 +8,7 @@ static void printParserErrors(std::ostream& out, const std::vector<std::string>&
 
 void Repl::Start(std::istream& in, std::ostream& out) {
     const std::string PROMPT = ">> ";
+    auto env = std::make_shared<Environment>();
 
     while (true) {
         out << PROMPT;
@@ -25,7 +26,7 @@ void Repl::Start(std::istream& in, std::ostream& out) {
             continue;
         }
 
-        auto evaluated = Eval(program.get());
+        auto evaluated = Eval(program.get(), env);
         if (evaluated != nullptr) {
             out << evaluated->Inspect() << std::endl;
         }
