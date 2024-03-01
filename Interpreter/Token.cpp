@@ -15,5 +15,6 @@ std::unordered_map<std::string, TokenType> keywords = {
     {"CHAR", CHAR},
     {"BOOL", BOOL},
     {"FLOAT", FLOAT},
+    {"STRING", STRING},
     {"VOID", VOID},
 };

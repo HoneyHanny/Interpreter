@@ -403,7 +403,7 @@ std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
     //    return nullptr; 
     //}
 
-    if (!(peekTokenIs(INT, CHAR, FLOAT, BOOL, VOID))) { // Function must have type declaration
+    if (!(peekTokenIs(INT, CHAR, FLOAT, BOOL, VOID, STRING))) { // Function must have type declaration
         std::cerr << lit->TokenLiteral() << std::endl;
         std::cerr << "Failed to find TYPE, peekToken: " << peekToken.Type << std::endl;
         return nullptr;
