@@ -42,6 +42,36 @@ std::unique_ptr<Statement> Parser::parseStatement() {
     else if (curToken.Type == RETURN) {
         return parseReturnStatement();
     }
+    else if (curToken.Type == FUNCTION) {
+        auto stmt = std::make_unique<ExpressionStatement>(curToken);
+        auto fnToken = curToken;
+
+        nextToken();
+
+        auto callName = parseIdentifier();
+
+        if (peekTokenIs(LPAREN)) {
+            stmt->Expression_ = parseFunctionLiteral(fnToken, std::move(callName));
+
+            if (peekTokenIs(NEWLINE)) {
+                nextToken();
+            }
+
+        }
+        else if (peekTokenIs(ASSIGN)) {
+            nextToken();
+            nextToken();
+
+            stmt->name = std::move(callName);
+            stmt->Expression_ = parseExpression(Precedence::LOWEST);
+
+            if (peekTokenIs(NEWLINE)) {
+                nextToken();
+            }
+        }
+
+        return stmt;
+    }
     // Expression Statements
     else if (curToken.Type != NEWLINE){
         return parseExpressionStatement();
@@ -368,29 +398,12 @@ std::unique_ptr<Expression> Parser::parseIfExpression() {
     return expression;
 }
 
-std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
+std::unique_ptr<Expression> Parser::parseFunctionLiteral(Token fnToken, std::unique_ptr<Expression> CallName) {
     Tracer tracer("parseFunctionLiteral");
 
-    // Flag guards
-    //if (!isFirstFunctionLiteral) {
-    //    // Skip parsing this IF expression if it's done parsing the original expression.
-    //    std::cerr << "Skipping FUNCTION expression as it's not the first." << std::endl;
-    //    return nullptr;
-    //}
+    auto lit = std::make_unique<FunctionLiteral>(fnToken);
 
-    //isFirstFunctionLiteral = false; // Set flag to false so that it skips other IFs
-
-    auto token = curToken; 
-    auto type = peekToken;
-    auto lit = std::make_unique<FunctionLiteral>(token);
-
-    if (!expectPeek(IDENT)) {
-        std::cerr << lit->TokenLiteral() << std::endl;
-        std::cerr << "Failed to find IDENT, peekToken: " << peekToken.Type << std::endl;
-        return nullptr;
-    }
-
-    lit->CallName = parseIdentifier();
+    lit->CallName = std::move(CallName);
 
     if (!expectPeek(LPAREN)) {
         std::cerr << lit->TokenLiteral() << std::endl;
@@ -403,7 +416,7 @@ std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
     //    return nullptr; 
     //}
 
-    if (!(peekTokenIs(INT, CHAR, FLOAT, BOOL, VOID))) { // Function must have type declaration
+    if (!(peekTokenIs(INT, CHAR, FLOAT, BOOL, VOID, STRING, FUNCTION))) { // Function must have type declaration
         std::cerr << lit->TokenLiteral() << std::endl;
         std::cerr << "Failed to find TYPE, peekToken: " << peekToken.Type << std::endl;
         return nullptr;
@@ -441,15 +454,11 @@ std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
 
     lit->Body = parseBlockStatement();
 
-    // Set flags to true as it's done parsing the entire control flow.
-    //isFirstFunctionLiteral = true;
-
     return lit;
 }
 
 std::unique_ptr<Expression> Parser::parseCallExpression(std::unique_ptr<Expression> function) {
     Tracer tracer("parseCallExpression");
-
     auto exp = std::make_unique<CallExpression>(curToken);
     exp->Function = std::move(function);
     exp->Arguments = parseCallArguments();

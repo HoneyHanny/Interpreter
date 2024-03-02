@@ -54,7 +54,7 @@ public:
     std::unique_ptr<Expression> parseBoolean();
     std::unique_ptr<Expression> parseGroupedExpression();
     std::unique_ptr<Expression> parseIfExpression();
-    std::unique_ptr<Expression> parseFunctionLiteral();
+    std::unique_ptr<Expression> parseFunctionLiteral(Token fnToken, std::unique_ptr<Expression> CallName);
     std::unique_ptr<Expression> parseCallExpression(std::unique_ptr<Expression> function);
     std::vector<std::unique_ptr<Expression>> parseCallArguments();
 
@@ -142,9 +142,9 @@ private:
             return this->parseIfExpression();
         }); 
 
-        registerPrefix(FUNCTION, [this]() -> std::unique_ptr<Expression> {
+ /*       registerPrefix(FUNCTION, [this]() -> std::unique_ptr<Expression> {
             return this->parseFunctionLiteral();
-        });
+        });*/
     }
 
     void setupInfixParseFns() {

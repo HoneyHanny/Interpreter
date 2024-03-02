@@ -20,3 +20,4 @@ void TestReturnStatementsV2();
 void TestErrorHandling();
 void TestFunctionObject();
 void TestFunctionApplication();
+void TestClosures();

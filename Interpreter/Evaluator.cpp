@@ -26,21 +26,21 @@ static void formatMessage(std::ostringstream& message, const std::string& format
 }
 
 template<typename... Args>
-static std::unique_ptr<ErrorObject> newError(const std::string& format, Args... args) {
+static std::shared_ptr<ErrorObject> newError(const std::string& format, Args... args) {
     std::ostringstream message;
     formatMessage(message, format, std::forward<Args>(args)...);
     return std::make_unique<ErrorObject>(message.str());
 }
 
-static bool isError(const std::unique_ptr<Object>& obj) {
+static bool isError(const std::shared_ptr<Object>& obj) {
     if (obj) {
         return obj->Type() == ObjectTypeToString(ObjectType_::ERROR_OBJ);
     }
     return false;
 
 }
-static std::unique_ptr<Object> evalProgram(const std::vector<std::unique_ptr<Statement>>& stmts, const std::shared_ptr<Environment>& env) {
-    std::unique_ptr<Object> result;
+static std::shared_ptr<Object> evalProgram(const std::vector<std::unique_ptr<Statement>>& stmts, const std::shared_ptr<Environment>& env) {
+    std::shared_ptr<Object> result;
     for (const auto& statement : stmts) {
         // Dynamic cast to Node* for Eval
         const Node* node = dynamic_cast<const Node*>(statement.get());
@@ -48,7 +48,7 @@ static std::unique_ptr<Object> evalProgram(const std::vector<std::unique_ptr<Sta
             result = Eval(node, env);
 
             if (auto returnValue = dynamic_cast<ReturnValue*>(result.get())) {
-                return std::unique_ptr<Object>(returnValue->TakeValue());
+                return std::shared_ptr<Object>(returnValue->TakeValue());
             }
             else if (auto error = dynamic_cast<ErrorObject*>(result.get())) {
                 return result;
@@ -61,7 +61,7 @@ static std::unique_ptr<Object> evalProgram(const std::vector<std::unique_ptr<Sta
     return result; // Default return path
 }
 
-static std::unique_ptr<Object> evalBangOperatorExpression(std::unique_ptr<Object> right) {
+static std::shared_ptr<Object> evalBangOperatorExpression(std::shared_ptr<Object> right) {
     if (auto booleanRight = dynamic_cast<BooleanObject*>(right.get())) {
         return std::make_unique<BooleanObject>(!booleanRight->Value);
     }
@@ -75,7 +75,7 @@ static std::unique_ptr<Object> evalBangOperatorExpression(std::unique_ptr<Object
     }
 }
 
-static std::unique_ptr<Object> evalMinusPrefixOperatorExpression(std::unique_ptr<Object> right) {
+static std::shared_ptr<Object> evalMinusPrefixOperatorExpression(std::shared_ptr<Object> right) {
     IntegerObject* integerRight = dynamic_cast<IntegerObject*>(right.get());
 
     if (!integerRight) {
@@ -85,7 +85,7 @@ static std::unique_ptr<Object> evalMinusPrefixOperatorExpression(std::unique_ptr
     return std::make_unique<IntegerObject>(-integerRight->Value);
 }
 
-static std::unique_ptr<Object> evalPrefixExpression(const std::string& operator_, std::unique_ptr<Object> right) {
+static std::shared_ptr<Object> evalPrefixExpression(const std::string& operator_, std::shared_ptr<Object> right) {
     if (operator_ == "!") {
         return evalBangOperatorExpression(std::move(right));
     }
@@ -96,10 +96,10 @@ static std::unique_ptr<Object> evalPrefixExpression(const std::string& operator_
     return newError("unknown operator: ", operator_, right->Type());
 }
 
-static std::unique_ptr<Object> evalIntegerInfixExpression(
+static std::shared_ptr<Object> evalIntegerInfixExpression(
     const std::string& operator_,
-    std::unique_ptr<Object> left,
-    std::unique_ptr<Object> right) {
+    std::shared_ptr<Object> left,
+    std::shared_ptr<Object> right) {
 
     auto leftVal = dynamic_cast<IntegerObject*>(left.get())->Value;
     auto rightVal = dynamic_cast<IntegerObject*>(right.get())->Value;
@@ -135,10 +135,10 @@ static std::unique_ptr<Object> evalIntegerInfixExpression(
     return newError("unknown operator: ", left->Type(), operator_, right->Type());  
 }
 
-static std::unique_ptr<Object> evalInfixExpression(
+static std::shared_ptr<Object> evalInfixExpression(
     const std::string& operator_,
-    std::unique_ptr<Object> left,
-    std::unique_ptr<Object> right) {
+    std::shared_ptr<Object> left,
+    std::shared_ptr<Object> right) {
 
 
     if (left->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ) && 
@@ -163,7 +163,7 @@ static std::unique_ptr<Object> evalInfixExpression(
     }
 }
 
-static bool isTruthy(const std::unique_ptr<Object>& obj) {
+static bool isTruthy(const std::shared_ptr<Object>& obj) {
     if (dynamic_cast<NullObject*>(obj.get()) != nullptr) {
         return false;
     }
@@ -179,7 +179,7 @@ static bool isTruthy(const std::unique_ptr<Object>& obj) {
     return true;
 }
 
-static std::unique_ptr<Object> evalIfExpression(const IfExpression* ie, const std::shared_ptr<Environment>& env) {
+static std::shared_ptr<Object> evalIfExpression(const IfExpression* ie, const std::shared_ptr<Environment>& env) {
     auto condition = Eval(ie->Condition.get(), env);
     if (isError(condition)) {
         return condition;
@@ -196,8 +196,8 @@ static std::unique_ptr<Object> evalIfExpression(const IfExpression* ie, const st
     }
 }
 
-static std::unique_ptr<Object> evalBlockStatement(const BlockStatement* block, const std::shared_ptr<Environment>& env) {
-    std::unique_ptr<Object> result = nullptr;
+static std::shared_ptr<Object> evalBlockStatement(const BlockStatement* block, const std::shared_ptr<Environment>& env) {
+    std::shared_ptr<Object> result = nullptr;
 
     for (const auto& statement : block->Statements) {
         result = Eval(statement.get(), env);
@@ -213,23 +213,23 @@ static std::unique_ptr<Object> evalBlockStatement(const BlockStatement* block, c
     return result;
 }
 
-static std::unique_ptr<Object> evalIdentifier(const Identifier* node, const std::shared_ptr<Environment>& env) {
+static std::shared_ptr<Object> evalIdentifier(const Identifier* node, const std::shared_ptr<Environment>& env) {
     auto val = env->Get(node->Value);
     if (!val) {
         return newError("identifier not found: " + node->Value);
     }
 
-    return val->clone();
+    return val;
 }
 
-static std::vector<std::unique_ptr<Object>> evalExpressions(const std::vector<std::unique_ptr<Expression>>& exps, const std::shared_ptr<Environment>& env) {
-    std::vector<std::unique_ptr<Object>> results;
+static std::vector<std::shared_ptr<Object>> evalExpressions(const std::vector<std::unique_ptr<Expression>>& exps, const std::shared_ptr<Environment>& env) {
+    std::vector<std::shared_ptr<Object>> results;
 
     for (const auto& expr : exps) {
         auto evaluated = Eval(expr.get(), env);
         if (isError(evaluated)) {
             // Immediately return a vector containing just this error
-            std::vector<std::unique_ptr<Object>> result;
+            std::vector<std::shared_ptr<Object>> result;
             result.push_back(std::move(evaluated));
 
             return result;
@@ -240,24 +240,24 @@ static std::vector<std::unique_ptr<Object>> evalExpressions(const std::vector<st
     return results;
 }
 
-static std::shared_ptr<Environment> extendFunctionEnv(const Function& fn, const std::vector<std::unique_ptr<Object>>& args) {
+static std::shared_ptr<Environment> extendFunctionEnv(const Function& fn, const std::vector<std::shared_ptr<Object>>& args) {
     auto extendedEnv = std::make_shared<Environment>(fn.Env);
 
     for (size_t i = 0; i < fn.Parameters.size(); ++i) {
-        extendedEnv->Set(fn.Parameters[i]->Name->Value, args[i]->clone());
+        extendedEnv->Set(fn.Parameters[i]->Name->Value, args[i]);
     }
 
     return extendedEnv;
 }
 
-static std::unique_ptr<Object> unwrapReturnValue(std::unique_ptr<Object>& obj) {
+static std::shared_ptr<Object> unwrapReturnValue(std::shared_ptr<Object>& obj) {
     if (auto returnValue = dynamic_cast<ReturnValue*>(obj.get())) {
         return returnValue->TakeValue();
     }
-    return obj->clone();
+    return obj;
 }
 
-static std::unique_ptr<Object> applyFunction(std::unique_ptr<Object>& fn, const std::vector<std::unique_ptr<Object>>& args) {
+static std::shared_ptr<Object> applyFunction(std::shared_ptr<Object>& fn, const std::vector<std::shared_ptr<Object>>& args) {
     auto function = dynamic_cast<Function*>(fn.get());
     if (!function) {
         return std::make_unique<ErrorObject>("Not a function: " + fn->Type());
@@ -269,13 +269,21 @@ static std::unique_ptr<Object> applyFunction(std::unique_ptr<Object>& fn, const 
 }
 
 
-std::unique_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment>& env) {
-    // Numerical Literal -> Integer Object
+std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment>& env) {
     if (auto programNode = dynamic_cast<const Program*>(node)) {
         return evalProgram(programNode->Statements, env);
     }
     else if (auto exprStmtNode = dynamic_cast<const ExpressionStatement*>(node)) {
+        if (exprStmtNode->token.Type == FUNCTION && exprStmtNode->name) {
+            auto val = Eval(exprStmtNode->Expression_.get(), env);
+            if (isError(val)) {
+                return val;
+            }
+            env->Set(exprStmtNode->name->TokenLiteral(), val);
+        }
+        else {
         return Eval(exprStmtNode->Expression_.get(), env);
+        }
     } 
     else if (auto numLit = dynamic_cast<const NumericalLiteral*>(node)) {
         return std::make_unique<IntegerObject>(numLit->Value);
@@ -288,7 +296,7 @@ std::unique_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
         if (isError(right)) {
             return right;
         }
-        return evalPrefixExpression(prefixExpr->Operator, std::move(right));
+        return evalPrefixExpression(prefixExpr->Operator, right);
     }
     else if (auto infixExpr = dynamic_cast<const InfixExpression*>(node)) {
         auto left = Eval(infixExpr->Left.get(), env);
@@ -299,7 +307,7 @@ std::unique_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
         if (isError(right)) {
             return right;
         }
-        return evalInfixExpression(infixExpr->Operator, std::move(left), std::move(right));
+        return evalInfixExpression(infixExpr->Operator, left, right);
     }
     else if (auto blockStmt = dynamic_cast<const BlockStatement*>(node)) {
         return evalBlockStatement(blockStmt, env);
@@ -312,14 +320,14 @@ std::unique_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
         if (isError(val)) {
             return val;
         }
-        return std::make_unique<ReturnValue>(std::move(val));
+        return std::make_unique<ReturnValue>(val);
     }
     else if (const auto* typedDeclStmt = dynamic_cast<const TypedDeclStatement*>(node)) {
         auto val = Eval(typedDeclStmt->Value.get(), env);
         if (isError(val)) {
             return val;
         }
-        env->Set(typedDeclStmt->Name->Value, std::move(val));
+        env->Set(typedDeclStmt->Name->Value, val);
     }
     else if (const auto* ident = dynamic_cast<const Identifier*>(node)) {
         return evalIdentifier(ident, env);
@@ -333,19 +341,19 @@ std::unique_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
         auto body = std::make_unique<BlockStatement>(funcLit->Body->token);
         body->Statements = std::move(funcLit->Body->Statements);
 
-        auto fnObject = std::make_unique<Function>(funcLit->type, std::move(funcLit->CallName->clone()), std::move(params), std::move(body), env);
+        auto fnObject = std::make_shared<Function>(funcLit->type, std::move(funcLit->CallName->clone()), std::move(params), std::move(body), env);
         
-        env->Set(fnObject->CallName->TokenLiteral(), fnObject->clone());
+        env->Set(fnObject->CallName->TokenLiteral(), fnObject);
 
         return fnObject;
     }
     else if (const auto* callExpr = dynamic_cast<const CallExpression*>(node)) {
         auto function = Eval(callExpr->Function.get(), env);
         
-        //if (isError(function)) {
-        //    std::cout << function->Inspect() << std::endl;
-        //    return function;
-        //}
+        if (isError(function)) {
+            std::cout << function->Inspect() << std::endl;
+            return function;
+        }
         
         auto args = evalExpressions(callExpr->Arguments, env);
         if (!args.empty() && isError(args.front())) {

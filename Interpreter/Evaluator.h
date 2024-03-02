@@ -7,4 +7,4 @@
 #include "Object.h"
 #include "Environment.h"
 
-std::unique_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment>& env);
+std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment>& env);
