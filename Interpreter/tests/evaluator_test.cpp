@@ -459,4 +459,27 @@ void TestFunctionApplication() {
             std::cout << "Test passed for input: " << test.input << std::endl;
         }
     }
+
+    std::cout << "TestFunctionApplication passed." << std::endl;
+}
+
+void TestClosures() {
+    std::string input = R"(
+    FUNCTION inner(INT x) FUNCTION:
+    BEGIN FUNCTION
+        FUNCTION ret(INT y) INT:
+        BEGIN FUNCTION
+            RETURN x + y
+        END FUNCTION
+    END FUNCTION
+   
+    FUNCTION outer = inner: 2
+    outer: 2
+)";
+
+    auto evaluated = testEval(input);
+    std::cout << "Evaluation: \n" << evaluated->Inspect() << std::endl;
+    testIntegerObject(evaluated, 4);
+
+    std::cout << "TestClosures passed." << std::endl;
 }

@@ -5,7 +5,7 @@ std::shared_ptr<Object> Environment::Get(const std::string& name) const {
     if (iter != store.end()) {
         return iter->second;
     }
-    else if (outer != nullptr) {
+    else if (outer != nullptr) {    
         return outer->Get(name);
     }
     return nullptr;

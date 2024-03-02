@@ -147,6 +147,7 @@ public:
 class ExpressionStatement : public Statement {
 public:
     Token token; // <First token of the expression>
+    std::unique_ptr<Expression> name; // Optional name
     std::unique_ptr<Expression> Expression_; // <EXPRESSION>
 
     ExpressionStatement(const Token& token)
@@ -154,6 +155,10 @@ public:
 
     std::string String() const override {
         std::ostringstream out;
+
+        if (name) {
+            out << token.Literal << " " << name->String() << " ";
+        }
 
         if (Expression_ != nullptr) {
             out << Expression_->String();

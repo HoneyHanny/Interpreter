@@ -44,5 +44,6 @@ void ExecuteTestCases() {
     //TestReturnStatementsV2();
     //TestErrorHandling();
     //TestFunctionObject();
-    TestFunctionApplication();
+    //TestFunctionApplication();
+    TestClosures();
 }

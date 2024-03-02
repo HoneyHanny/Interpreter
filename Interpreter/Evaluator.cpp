@@ -270,12 +270,20 @@ static std::shared_ptr<Object> applyFunction(std::shared_ptr<Object>& fn, const 
 
 
 std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment>& env) {
-    // Numerical Literal -> Integer Object
     if (auto programNode = dynamic_cast<const Program*>(node)) {
         return evalProgram(programNode->Statements, env);
     }
     else if (auto exprStmtNode = dynamic_cast<const ExpressionStatement*>(node)) {
+        if (exprStmtNode->token.Type == FUNCTION && exprStmtNode->name) {
+            auto val = Eval(exprStmtNode->Expression_.get(), env);
+            if (isError(val)) {
+                return val;
+            }
+            env->Set(exprStmtNode->name->TokenLiteral(), val);
+        }
+        else {
         return Eval(exprStmtNode->Expression_.get(), env);
+        }
     } 
     else if (auto numLit = dynamic_cast<const NumericalLiteral*>(node)) {
         return std::make_unique<IntegerObject>(numLit->Value);
@@ -342,10 +350,10 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
     else if (const auto* callExpr = dynamic_cast<const CallExpression*>(node)) {
         auto function = Eval(callExpr->Function.get(), env);
         
-        //if (isError(function)) {
-        //    std::cout << function->Inspect() << std::endl;
-        //    return function;
-        //}
+        if (isError(function)) {
+            std::cout << function->Inspect() << std::endl;
+            return function;
+        }
         
         auto args = evalExpressions(callExpr->Arguments, env);
         if (!args.empty() && isError(args.front())) {
