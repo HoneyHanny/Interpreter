@@ -28,7 +28,7 @@ public:
 
     virtual ObjectType Type() const = 0; 
     virtual std::string Inspect() const = 0; 
-    virtual std::unique_ptr<Object> clone() const = 0;
+    //virtual std::shared_ptr<Object> clone() const = 0;
 };
 
 inline std::string ObjectTypeToString(ObjectType_ type) {
@@ -58,9 +58,9 @@ public:
         return std::to_string(Value);
     }
 
-    std::unique_ptr<Object> clone() const override {
-        return std::make_unique<IntegerObject>(Value);
-    }
+    //std::shared_ptr<Object> clone() const override {
+    //    return std::make_unique<IntegerObject>(Value);
+    //}
 };
 
 class BooleanObject : public Object {
@@ -77,9 +77,9 @@ public:
         return std::to_string(Value);
     }
 
-    std::unique_ptr<Object> clone() const override {
-        return std::make_unique<BooleanObject>(Value);
-    }
+    //std::shared_ptr<Object> clone() const override {
+    //    return std::make_unique<BooleanObject>(Value);
+    //}
 };
 
 class NullObject : public Object {
@@ -95,16 +95,16 @@ public:
         return "NULL";
     }
 
-    std::unique_ptr<Object> clone() const override {
-        return std::make_unique<NullObject>();
-    }
+    //std::shared_ptr<Object> clone() const override {
+    //    return std::make_unique<NullObject>();
+    //}
 };
 
 class ReturnValue : public Object {
 public:
-    std::unique_ptr<Object> Value;
+    std::shared_ptr<Object> Value;
 
-    explicit ReturnValue(std::unique_ptr<Object> value) : Value(std::move(value)) {}
+    explicit ReturnValue(std::shared_ptr<Object> value) : Value(std::move(value)) {}
 
     ObjectType Type() const override {
         return ObjectTypeToString(ObjectType_::RETURN_VALUE_OBJ);
@@ -114,13 +114,13 @@ public:
         return Value->Inspect();
     }
 
-    std::unique_ptr<Object> TakeValue() {
+    std::shared_ptr<Object> TakeValue() {
         return std::move(Value);
     }
 
-    std::unique_ptr<Object> clone() const override {
-        return std::make_unique<ReturnValue>(Value->clone());
-    }
+    //std::shared_ptr<Object> clone() const override {
+    //    return std::make_unique<ReturnValue>(Value->clone());
+    //}
 };
 
 class ErrorObject : public Object {
@@ -137,9 +137,9 @@ public:
         return "CODE ERROR - " + Message;
     }
 
-    std::unique_ptr<Object> clone() const override {
-        return std::make_unique<ErrorObject>(Message);
-    }
+    //std::shared_ptr<Object> clone() const override {
+    //    return std::make_unique<ErrorObject>(Message);
+    //}
 };
 
 class Function : public Object {
@@ -174,15 +174,15 @@ public:
         return out.str();
     }
 
-    std::unique_ptr<Object> clone() const override {
-        std::vector<std::unique_ptr<TypedDeclStatement>> clonedParams;
-        for (const auto& param : Parameters) {
-            clonedParams.push_back(std::unique_ptr<TypedDeclStatement>(static_cast<TypedDeclStatement*>(param->clone().release())));
-        }
+    //std::shared_ptr<Object> clone() const override {
+    //    std::vector<std::unique_ptr<TypedDeclStatement>> clonedParams;
+    //    for (const auto& param : Parameters) {
+    //        clonedParams.push_back(std::unique_ptr<TypedDeclStatement>(static_cast<TypedDeclStatement*>(param->clone().release())));
+    //    }
 
-        auto clonedBody = std::unique_ptr<BlockStatement>(static_cast<BlockStatement*>(Body->clone().release()));
-        auto clonedCallName = CallName ? std::unique_ptr<Expression>(static_cast<Expression*>(CallName->clone().release())) : nullptr;
+    //    auto clonedBody = std::unique_ptr<BlockStatement>(static_cast<BlockStatement*>(Body->clone().release()));
+    //    auto clonedCallName = CallName ? std::unique_ptr<Expression>(static_cast<Expression*>(CallName->clone().release())) : nullptr;
 
-        return std::make_unique<Function>(ReturnType, std::move(clonedCallName), std::move(clonedParams), std::move(clonedBody), Env);
-    }
+    //    return std::make_unique<Function>(ReturnType, std::move(clonedCallName), std::move(clonedParams), std::move(clonedBody), Env);
+    //}
 };

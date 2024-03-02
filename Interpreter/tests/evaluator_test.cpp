@@ -1,7 +1,7 @@
 #include "evaluator_test.h"
 
 
-static std::unique_ptr<Object> testEval(const std::string& input) {
+static std::shared_ptr<Object> testEval(const std::string& input) {
     auto lexer = std::make_unique<Lexer>(input);
     Parser parser(std::move(lexer));
     
@@ -11,7 +11,7 @@ static std::unique_ptr<Object> testEval(const std::string& input) {
     return Eval(program.get(), env);
 }
 
-static bool testIntegerObject(const std::unique_ptr<Object>& obj, int64_t expected) {
+static bool testIntegerObject(const std::shared_ptr<Object>& obj, int64_t expected) {
     auto result = dynamic_cast<IntegerObject*>(obj.get());
     if (!result) {
         std::cerr << "object is not Integer. got=" << typeid(*obj).name() << std::endl;
@@ -61,7 +61,7 @@ void TestEvalNumericalExpression() {
     std::cout << "TestEvalNumericalExpression passed." << std::endl;
 }
 
-static bool testBooleanObject(const std::unique_ptr<Object>& obj, bool expected) {
+static bool testBooleanObject(const std::shared_ptr<Object>& obj, bool expected) {
     auto result = dynamic_cast<BooleanObject*>(obj.get());
     if (!result) {
         std::cout << "object is not Boolean. got=" << typeid(*obj).name() << std::endl;
@@ -145,7 +145,7 @@ void TestBangOperator() {
     std::cout << "TestBangOperator passed." << std::endl;
 }
 
-static bool testNullObject(const std::unique_ptr<Object>& obj) {
+static bool testNullObject(const std::shared_ptr<Object>& obj) {
     if (dynamic_cast<NullObject*>(obj.get()) == nullptr) {
         std::cerr << "Object is not a NullObject. got = " << typeid(*obj).name() << std::endl;
         return false;
@@ -266,7 +266,7 @@ IF (10 > 1)
     std::cout << "TestReturnStatements passed." << std::endl;
 }
 
-std::unique_ptr<Object> testEval(const std::string& input);
+std::shared_ptr<Object> testEval(const std::string& input);
 
 void TestErrorHandling() {
     struct TestCase {
@@ -365,7 +365,7 @@ void TestFunctionObject() {
                             x + 2
                             END FUNCTION)";
 
-    auto evaluated = testEval(input); // Assuming testEval returns std::unique_ptr<Object>
+    auto evaluated = testEval(input); // Assuming testEval returns std::shared_ptr<Object>
     Function* fn = dynamic_cast<Function*>(evaluated.get());
 
     if (!fn) {
