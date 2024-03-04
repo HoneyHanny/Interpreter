@@ -11,6 +11,7 @@
 #include <string>
 #include <optional>
 #include <cassert>
+#include <variant>
 
 void TestEvalNumericalExpression();
 void TestEvalBooleanExpression();
@@ -23,3 +24,4 @@ void TestFunctionApplication();
 void TestClosures();
 void TestStringLiteral();
 void TestStringConcatenation();
+void TestBuiltinFunctions();

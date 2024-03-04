@@ -9,6 +9,8 @@ class Environment;
 #include <string>
 #include <sstream>
 #include <memory>
+#include <functional>
+#include <unordered_map>
 
 using ObjectType = std::string;
 
@@ -202,5 +204,23 @@ public:
 
     std::string Inspect() const override {
         return Value;
+    }
+};
+
+using BuiltinFunction = std::function<std::shared_ptr<Object>(const std::vector<std::shared_ptr<Object>>&)>;
+
+class Builtin : public Object {
+public:
+    BuiltinFunction Fn;
+
+    // Constructor accepting a BuiltinFunction
+    Builtin(BuiltinFunction fn) : Fn(std::move(fn)) {}
+
+    ObjectType Type() const override {
+        return ObjectTypeToString(ObjectType_::BUILTIN);
+    }
+
+    std::string Inspect() const override {
+        return "builtin function";
     }
 };

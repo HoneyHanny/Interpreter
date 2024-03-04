@@ -1,5 +1,22 @@
 #include "Evaluator.h"
 
+std::unordered_map<std::string, std::shared_ptr<Builtin>> builtins = {
+    {"LEN", std::make_shared<Builtin>(
+        [](const std::vector<std::shared_ptr<Object>>& args) -> std::shared_ptr<Object> {
+            if (args.size() != 1) {
+                return std::make_shared<ErrorObject>("wrong number of arguments. got=" + std::to_string(args.size()) + ", want=1");
+            }
+
+            if (auto str = std::dynamic_pointer_cast<String>(args[0])) {
+                return std::make_shared<IntegerObject>(static_cast<int64_t>(str->Value.length()));
+            } else {
+                return std::make_shared<ErrorObject>("argument to `len` not supported, got " + args[0]->Type());
+            }
+        }
+    )},
+};
+
+
 template<typename T>
 static void printArg(std::ostringstream& os, T&& arg) {
     os << std::forward<T>(arg);
@@ -233,11 +250,16 @@ static std::shared_ptr<Object> evalBlockStatement(const BlockStatement* block, c
 
 static std::shared_ptr<Object> evalIdentifier(const Identifier* node, const std::shared_ptr<Environment>& env) {
     auto val = env->Get(node->Value);
-    if (!val) {
-        return newError("identifier not found: " + node->Value);
+    if (val) {
+        return val; 
     }
 
-    return val;
+    auto it = builtins.find(node->Value);
+    if (it != builtins.end()) {
+        return it->second; 
+    }
+
+    return newError("identifier not found: " + node->Value);
 }
 
 static std::vector<std::shared_ptr<Object>> evalExpressions(const std::vector<std::unique_ptr<Expression>>& exps, const std::shared_ptr<Environment>& env) {
@@ -275,17 +297,19 @@ static std::shared_ptr<Object> unwrapReturnValue(std::shared_ptr<Object>& obj) {
     return obj;
 }
 
-static std::shared_ptr<Object> applyFunction(std::shared_ptr<Object>& fn, const std::vector<std::shared_ptr<Object>>& args) {
-    auto function = dynamic_cast<Function*>(fn.get());
-    if (!function) {
-        return std::make_unique<ErrorObject>("Not a function: " + fn->Type());
+std::shared_ptr<Object> applyFunction(std::shared_ptr<Object>& fn, const std::vector<std::shared_ptr<Object>>& args) {
+    if (auto function = std::dynamic_pointer_cast<Function>(fn)) {
+        auto extendedEnv = extendFunctionEnv(*function, args);
+        auto evaluated = Eval(function->Body.get(), extendedEnv);
+        return unwrapReturnValue(evaluated);
     }
-
-    auto extendedEnv = extendFunctionEnv(*function, args);
-    auto evaluated = Eval(function->Body.get(), extendedEnv);
-    return unwrapReturnValue(evaluated);
+    else if (auto builtin = std::dynamic_pointer_cast<Builtin>(fn)) {
+        return builtin->Fn(args); // Call the builtin function with args
+    }
+    else {
+        return std::make_shared<ErrorObject>("not a function: " + fn->Inspect());
+    }
 }
-
 
 std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment>& env) {
     if (auto programNode = dynamic_cast<const Program*>(node)) {

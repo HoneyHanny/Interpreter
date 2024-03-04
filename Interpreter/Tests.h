@@ -48,5 +48,6 @@ void ExecuteTestCases() {
     //TestFunctionApplication();
     //TestClosures();
     //TestStringLiteral();
-    TestStringConcatenation();
+    //TestStringConcatenation();
+    TestBuiltinFunctions();
 }

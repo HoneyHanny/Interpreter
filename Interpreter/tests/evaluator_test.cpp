@@ -521,3 +521,41 @@ void TestStringConcatenation() {
 
     std::cout << "TestStringConcatenation passed." << std::endl;
 }
+
+void TestBuiltinFunctions() {
+    struct TestCase {
+        std::string input;
+        std::variant<int64_t, std::string> expected;
+    };
+
+    std::vector<TestCase> tests = {
+        {R"(LEN: "")", 0},
+        {R"(LEN: "four")", 4},
+        {R"(LEN: "hello world")", 11},
+        {R"(LEN: 1)", "argument to `len` not supported, got INTEGER"},
+        {R"(LEN: "one", "two")", "wrong number of arguments. got=2, want=1"},
+    };
+
+    for (const auto& test : tests) {
+        auto evaluated = testEval(test.input);
+        std::visit([&](auto&& expected) {
+            using T = std::decay_t<decltype(expected)>;
+            if constexpr (std::is_same_v<T, int64_t>) {
+                if (!testIntegerObject(evaluated, expected)) {
+                    std::cerr << "Test failed for input: " << test.input << std::endl;
+                    std::exit(EXIT_FAILURE);
+                }
+            }
+            else if constexpr (std::is_same_v<T, std::string>) {
+                auto errObj = dynamic_cast<ErrorObject*>(evaluated.get());
+                if (!errObj || errObj->Message != expected) {
+                    std::cerr << "Test failed for input: " << test.input << ". Expected error: " << expected << ", got: " << (errObj ? errObj->Message : "not an error") << std::endl;
+                    std::exit(EXIT_FAILURE);
+                }
+            }
+        }, test.expected);
+        std::cout << "Test passed for input: " << test.input << std::endl;
+    }
+
+    std::cout << "TestBuiltinFunctions passed." << std::endl;
+}
