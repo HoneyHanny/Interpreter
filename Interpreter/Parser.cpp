@@ -261,6 +261,12 @@ std::unique_ptr<Expression> Parser::parseNumericalLiteral() {
     return lit;
 }
 
+std::unique_ptr<Expression> Parser::parseStringLiteral() {
+    Tracer tracer("parseStringLiteral");
+
+    return std::make_unique<StringLiteral>(curToken, curToken.Literal);
+}
+
 std::unique_ptr<Expression> Parser::parsePrefixExpression() {
     Tracer tracer("parsePrefixExpression");
 

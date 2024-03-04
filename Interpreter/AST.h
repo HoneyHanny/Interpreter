@@ -203,6 +203,26 @@ public:
     }
 };
 
+// Subtree structure: <EXPRESSION>
+class StringLiteral : public Expression {
+public:
+    Token token;
+    std::string Value;
+
+    StringLiteral(const Token& token, const std::string& value)
+        : token(token), Value(value) {}
+
+    std::string String() const override { return "\"" + Value + "\""; }
+
+    void expressionNode() override {}
+    std::string TokenLiteral() const override { return token.Literal; }
+
+    std::unique_ptr<Expression> clone() const override {
+        return std::make_unique<StringLiteral>(token, Value);
+    }
+};
+
+
 // Subtree structure: <prefix operator><EXPRESSION>;
 class PrefixExpression : public Expression {
 public:

@@ -50,7 +50,8 @@ void TestNextToken2() {
 BEGIN CODE
     INT x, y, z = 5
     CHAR a_1 = 'n'
-    BOOL t = "TRUE"
+    BOOL t = TRUE
+    "foobar"
     x = y = 4 
     a_1 = 'c' 
     # this is a comment 
@@ -93,9 +94,11 @@ END CODE
         {BOOL, "BOOL"},
         {IDENT, "t"},
         {ASSIGN, "="},
-        {D_QUOTE, "\""},
+        //{D_QUOTE, "\""},
         {TRUE, "TRUE"},
-        {D_QUOTE, "\""},
+        //{D_QUOTE, "\""},
+        {NEWLINE, "\n"},
+        {STRING, "foobar"},
         {NEWLINE, "\n"},
         {IDENT, "x"},
         {ASSIGN, "="},
@@ -131,9 +134,7 @@ END CODE
         {HASH, "#"},
         {RSQBRACE, "]"},
         {AMPERSAND, "&"},
-        {D_QUOTE, "\""},
-        {IDENT, "last"},
-        {D_QUOTE, "\""},
+        {STRING, "last"},
         {NEWLINE, "\n"},
         {END, "END"},
         {CODE, "CODE"},
@@ -143,7 +144,7 @@ END CODE
 
     for (size_t i = 0; i < tests.size(); ++i) {
         Token tok = l.NextToken();
-        std::cout << "Testing token: " << tok.Literal;
+        std::cout << "Testing token: " << ((tok.Literal != "\n") ? tok.Literal : "NEWLINE");
         assertEqual(tok.Type, tests[i].first, "Test[" + std::to_string(i) + "] - TokenType wrong.");
         assertEqual(tok.Literal, tests[i].second, "Test[" + std::to_string(i) + "] - Literal wrong.");
         std::cout << " Test passed!" << std::endl;

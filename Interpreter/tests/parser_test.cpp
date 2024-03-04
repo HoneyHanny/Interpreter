@@ -987,3 +987,67 @@ void TestCallExpressionParsing() {
 
     std::cout << "TestCallExpressionParsing passed." << std::endl;
 }
+
+void TestStringLiteralExpression() {
+    std::string input = R"("hello world")";
+    auto lexer = std::make_unique<Lexer>(input);
+    Parser parser(std::move(lexer));
+
+    auto program = parser.ParseProgram();
+    if (program == nullptr) {
+        std::cerr << "ParseProgram() returned nullptr" << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    checkParserErrors(parser);
+
+    if (program->Statements.size() != 1) {
+        std::cerr << "TestStringLiteralExpression failed: program has not enough statements. got=" << program->Statements.size() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
+    if (!stmt) {
+        std::cerr << "TestStringLiteralExpression failed: program.Statements[0] is not ExpressionStatement." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto literal = dynamic_cast<StringLiteral*>(stmt->Expression_.get());
+    if (!literal) {
+        std::cerr << "TestStringLiteralExpression failed: exp not StringLiteral." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (literal->Value != "hello world") {
+        std::cerr << "TestStringLiteralExpression failed: literal.Value not 'hello world'. got=" << literal->Value << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (literal->TokenLiteral() != "hello world") {
+        std::cerr << "TestStringLiteralExpression failed: literal.TokenLiteral not 'hello world'. got=" << literal->TokenLiteral() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    std::cout << "TestStringLiteralExpression passed." << std::endl;
+}
+
+//bool teststringliteral(const std::unique_ptr<expression>& sl, const std::string& value) {
+//    auto stringlit = dynamic_cast<stringliteral*>(sl.get());
+//    if (!stringlit) {
+//        std::cerr << "sl not ast::stringliteral." << std::endl;
+//        return false;
+//    }
+//
+//    if (stringlit->value != value) {
+//        std::cerr << "stringlit.value not '" << value << "'. got='" << stringlit->value << "'" << std::endl;
+//        return false;
+//    }
+//
+//    // assuming tokenliteral() returns the string value without quotes
+//    if (stringlit->tokenliteral() != value) {
+//        std::cerr << "stringlit.tokenliteral not '" << value << "'. got='" << stringlit->tokenliteral() << "'" << std::endl;
+//        return false;
+//    }
+//
+//    return true;
+//}

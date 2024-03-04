@@ -49,6 +49,7 @@ public:
     std::unique_ptr<Expression> parseExpression(Precedence precedence);
     std::unique_ptr<Expression> parseIdentifier();
     std::unique_ptr<Expression> parseNumericalLiteral();
+    std::unique_ptr<Expression> parseStringLiteral();
     std::unique_ptr<Expression> parsePrefixExpression();
     std::unique_ptr<Expression> parseInfixExpression(std::unique_ptr<Expression> left);
     std::unique_ptr<Expression> parseBoolean();
@@ -93,6 +94,7 @@ public:
         {NEQ, Precedence::EQUALS},
         {LT, Precedence::LESSGREATER},
         {GT, Precedence::LESSGREATER},
+        {AMPERSAND, Precedence::SUM},
         {PLUS, Precedence::SUM},
         {MINUS, Precedence::SUM},
         {SLASH, Precedence::PRODUCT},
@@ -145,6 +147,10 @@ private:
  /*       registerPrefix(FUNCTION, [this]() -> std::unique_ptr<Expression> {
             return this->parseFunctionLiteral();
         });*/
+
+        registerPrefix(STRING, [this]() -> std::unique_ptr<Expression> {
+            return this->parseStringLiteral();
+        });
     }
 
     void setupInfixParseFns() {
@@ -153,6 +159,10 @@ private:
         });
 
         registerInfix(MINUS, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
+            return this->parseInfixExpression(std::move(left));
+        });
+
+        registerInfix(AMPERSAND, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
             return this->parseInfixExpression(std::move(left));
         });
 

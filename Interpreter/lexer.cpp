@@ -122,8 +122,11 @@ Token Lexer::NextToken() {
     case '\'':
         tok = { S_QUOTE, std::string(1, ch) };
         break;
-    case '"':
-        tok = { D_QUOTE, std::string(1, ch) };
+    case '"': 
+        tok = { 
+            STRING, 
+            readString(),
+        };
         break;
     case '$':
         tok = { DOLLAR_SIGN, std::string(1, ch) };
@@ -205,4 +208,16 @@ std::string Lexer::readNumber() {
     }
     // Since input is a std::string_view, we directly return a std::string part of it
     return std::string(input.substr(startPosition, position - startPosition));
+}
+
+// Read strings
+std::string Lexer::readString() {
+    int startPosition = position + 1;
+    while (true) {
+        readChar();
+        if (ch == '"' || ch == 0) {
+            break;
+        }
+    }
+    return input.substr(startPosition, position - startPosition);
 }

@@ -19,6 +19,8 @@ enum class ObjectType_ {
     RETURN_VALUE_OBJ,
     ERROR_OBJ,
     FUNCTION_OBJ,
+    STRING_OBJ,
+    BUILTIN,
     // Add other types as needed
 };
 
@@ -39,6 +41,7 @@ inline std::string ObjectTypeToString(ObjectType_ type) {
         case ObjectType_::RETURN_VALUE_OBJ: return "RETURN";
         case ObjectType_::ERROR_OBJ: return "ERROR";
         case ObjectType_::FUNCTION_OBJ: return "FUNCTION";
+        case ObjectType_::STRING_OBJ: return "STRING";
             // Add cases for other types
         default: return "UNKNOWN";
     }
@@ -185,4 +188,19 @@ public:
 
     //    return std::make_unique<Function>(ReturnType, std::move(clonedCallName), std::move(clonedParams), std::move(clonedBody), Env);
     //}
+};
+
+class String : public Object {
+public:
+    std::string Value;
+
+    String(std::string value) : Value(value) {}
+
+    ObjectType Type() const override {
+        return ObjectTypeToString(ObjectType_::STRING_OBJ);
+    }
+
+    std::string Inspect() const override {
+        return Value;
+    }
 };

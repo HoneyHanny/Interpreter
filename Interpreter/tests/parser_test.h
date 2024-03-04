@@ -24,6 +24,7 @@ void TestIfElseExpression();
 void TestFunctionLiteralParsing();
 void TestFunctionParameterParsing();
 void TestCallExpressionParsing();
+void TestStringLiteralExpression();
 
 bool testIdentifier(const std::unique_ptr<Expression>& exp, const std::string& value);
 bool testLiteralExpression(const std::unique_ptr<Expression>& exp, const LiteralTypeValues& expected);

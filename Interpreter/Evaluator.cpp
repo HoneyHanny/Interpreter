@@ -135,6 +135,20 @@ static std::shared_ptr<Object> evalIntegerInfixExpression(
     return newError("unknown operator: ", left->Type(), operator_, right->Type());  
 }
 
+static std::shared_ptr<Object> evalStringInfixExpression(
+    const std::string& operator_,
+    std::shared_ptr<Object> left,
+    std::shared_ptr<Object> right) {
+
+    auto leftVal = dynamic_cast<String*>(left.get())->Value;
+    auto rightVal = dynamic_cast<String*>(right.get())->Value;
+
+    if (operator_ == "&") {
+        return std::make_unique<String>(leftVal + rightVal);
+    }
+    return newError("unknown operator: ", left->Type(), operator_, right->Type());
+}
+
 static std::shared_ptr<Object> evalInfixExpression(
     const std::string& operator_,
     std::shared_ptr<Object> left,
@@ -144,6 +158,10 @@ static std::shared_ptr<Object> evalInfixExpression(
     if (left->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ) && 
         right->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ)) {
         return evalIntegerInfixExpression(operator_, std::move(left), std::move(right));
+    }
+    else if (left->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ) &&
+        right->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ)) {
+        return evalStringInfixExpression(operator_, std::move(left), std::move(right));
     }
     else if (operator_ == "==") {
         auto leftVal = dynamic_cast<BooleanObject*>(left.get())->Value;
@@ -290,6 +308,9 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
     }
     else if (auto bl = dynamic_cast<const Boolean*>(node)) {
         return std::make_unique<BooleanObject>(bl->Value);
+    }
+    else if (auto str = dynamic_cast<const StringLiteral*>(node)) {
+        return std::make_unique<String>(str->Value);
     }
     else if (auto prefixExpr = dynamic_cast<const PrefixExpression*>(node)) {
         auto right = Eval(prefixExpr->Right.get(), env);

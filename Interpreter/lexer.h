@@ -19,6 +19,7 @@ private:
 
     std::string readIdentifier(); // Check if keyword or identifier
     std::string readNumber(); // Check if number
+    std::string readString(); // Read strings
     void skipWhitespace(); // Skips whitespace in code
     TokenType lookupIdent(const std::string& ident); // Distinguishes between keywords and identifiers
 

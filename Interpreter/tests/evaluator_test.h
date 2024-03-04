@@ -21,3 +21,5 @@ void TestErrorHandling();
 void TestFunctionObject();
 void TestFunctionApplication();
 void TestClosures();
+void TestStringLiteral();
+void TestStringConcatenation();

@@ -483,3 +483,41 @@ void TestClosures() {
 
     std::cout << "TestClosures passed." << std::endl;
 }
+
+void TestStringLiteral() {
+    std::string input = R"("Hello World!")";
+
+    auto evaluated = testEval(input);
+
+    auto str = dynamic_cast<String*>(evaluated.get());
+    if (!str) {
+        std::cerr << "Object is not String. Got=" << typeid(*evaluated).name() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (str->Value != "Hello World!") {
+        std::cerr << "String has wrong value. Got=\"" << str->Value << "\"" << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    std::cout << "TestStringLiteral passed." << std::endl;
+}
+
+void TestStringConcatenation() {
+    std::string input = R"("Hello" & " " & "World!")";
+
+    auto evaluated = testEval(input);
+
+    auto str = dynamic_cast<String*>(evaluated.get());
+    if (!str) {
+        std::cerr << "Object is not String. Got=" << typeid(*evaluated).name() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (str->Value != "Hello World!") {
+        std::cerr << "String has wrong value. Got=\"" << str->Value << "\"" << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    std::cout << "TestStringConcatenation passed." << std::endl;
+}
