@@ -7,14 +7,17 @@
 
 class Environment {
 private:
-    std::unordered_map<std::string, std::shared_ptr<Object>> store;
+    using StoreValue = std::tuple<Token, std::string, std::shared_ptr<Object>>;
+    std::unordered_map<std::string, StoreValue> store;
+    std::unordered_map<std::shared_ptr<Object>, std::string> reverseStore;
     std::shared_ptr<Environment> outer;
 
 public:
     Environment() : outer(nullptr) {}
-
     explicit Environment(std::shared_ptr<Environment> outerEnv) : outer(std::move(outerEnv)) {}
 
-    std::shared_ptr<Object> Get(const std::string& name) const;
-    void Set(const std::string& name, std::shared_ptr<Object> val);
+    std::shared_ptr<Object> GetObject(const std::string& name) const;
+    Token GetType(const std::string& name) const;
+    void Set(const std::string& name, Token type, std::shared_ptr<Object> val);
+    std::string GetNameByObject(const std::shared_ptr<Object>& obj) const;
 };

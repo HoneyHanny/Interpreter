@@ -29,7 +29,8 @@ std::unique_ptr<Statement> Parser::parseStatement() {
     if (curToken.Type == INT 
         || curToken.Type == CHAR 
         || curToken.Type == BOOL
-        || curToken.Type == FLOAT) {
+        || curToken.Type == FLOAT
+        || curToken.Type == STRING) {
 
        /* if (peekTokenIs(NEWLINE)) {
             std::cout << "FN statement" << std::endl;
@@ -42,36 +43,36 @@ std::unique_ptr<Statement> Parser::parseStatement() {
     else if (curToken.Type == RETURN) {
         return parseReturnStatement();
     }
-    else if (curToken.Type == FUNCTION) {
-        auto stmt = std::make_unique<ExpressionStatement>(curToken);
-        auto fnToken = curToken;
+    //else if (curToken.Type == FUNCTION) {
+    //    auto stmt = std::make_unique<ExpressionStatement>(curToken);
+    //    auto fnToken = curToken;
 
-        nextToken();
+    //    nextToken();
 
-        auto callName = parseIdentifier();
+    //    auto callName = parseIdentifier();
 
-        if (peekTokenIs(LPAREN)) {
-            stmt->Expression_ = parseFunctionLiteral(fnToken, std::move(callName));
+    //    if (peekTokenIs(LPAREN)) {
+    //        stmt->Expression_ = parseFunctionLiteral(fnToken, std::move(callName));
 
-            if (peekTokenIs(NEWLINE)) {
-                nextToken();
-            }
+    //        if (peekTokenIs(NEWLINE)) {
+    //            nextToken();
+    //        }
 
-        }
-        else if (peekTokenIs(ASSIGN)) {
-            nextToken();
-            nextToken();
+    //    }
+    //    else if (peekTokenIs(ASSIGN)) {
+    //        nextToken();
+    //        nextToken();
 
-            stmt->name = std::move(callName);
-            stmt->Expression_ = parseExpression(Precedence::LOWEST);
+    //        stmt->name = std::move(callName);
+    //        stmt->Expression_ = parseExpression(Precedence::LOWEST);
 
-            if (peekTokenIs(NEWLINE)) {
-                nextToken();
-            }
-        }
+    //        if (peekTokenIs(NEWLINE)) {
+    //            nextToken();
+    //        }
+    //    }
 
-        return stmt;
-    }
+    //    return stmt;
+    //}
     // Expression Statements
     else if (curToken.Type != NEWLINE){
         return parseExpressionStatement();
@@ -83,7 +84,6 @@ std::unique_ptr<Statement> Parser::parseStatement() {
 std::unique_ptr<TypedDeclStatement> Parser::parseTypedDeclStatement() {
     Tracer tracer("parseTypedDeclStatement");
 
-    // TODO: Message here that says Parsing token: [something]
     auto stmt = std::make_unique<TypedDeclStatement>(curToken);
 
     if (!expectPeek(IDENT)) {
@@ -99,10 +99,11 @@ std::unique_ptr<TypedDeclStatement> Parser::parseTypedDeclStatement() {
         return stmt;
     }
 
-    if (!expectPeek(ASSIGN)) {
-        return nullptr;
+    if (!peekTokenIs(ASSIGN)) {
+        return stmt;
     }
 
+    nextToken();
     nextToken();
 
     stmt->Value = parseExpression(Precedence::LOWEST);
@@ -135,13 +136,25 @@ std::unique_ptr<ReturnStatement> Parser::parseReturnStatement() {
 std::unique_ptr<ExpressionStatement> Parser::parseExpressionStatement() { 
     Tracer tracer("parseExpressionStatement");
 
-    auto stmt = std::make_unique<ExpressionStatement>(curToken);
+    std::unique_ptr<ExpressionStatement> stmt = std::make_unique<ExpressionStatement>(curToken);
 
     stmt->Expression_ = parseExpression(Precedence::LOWEST);
+
+    if (currentParsedType.Type == FUNCTION) {
+        std::cout << "Creating a function!  - currentParsedType: " << currentParsedType.Type << std::endl;
+        stmt->token = currentParsedType;
+
+        if (currentParsedCallName) {
+            std::cout << "Cloning into exprstmt " << stmt->token.Type << " name: " << currentParsedCallName->String() << std::endl;
+            stmt->name = currentParsedCallName->clone();
+        }
+    }
 
     if (peekTokenIs(NEWLINE)) {
         nextToken();
     }
+
+    currentParsedType = { "", "" };
 
     return stmt;
 }
@@ -372,8 +385,6 @@ std::unique_ptr<Expression> Parser::parseIfExpression() {
     // Check for an 'else' part
     if (peekTokenIs(ELSE)) {
 
-        isFirstElseExpression = false; // Set flag to false so that it skips other ELSEs
-
         nextToken();
 
         if (!expectPeek(NEWLINE)) {
@@ -507,6 +518,17 @@ std::vector<std::unique_ptr<Expression>> Parser::parseCallArguments() {
     }
 
     return args;
+}
+
+std::unique_ptr<Expression> Parser::parseAssignExpression(std::unique_ptr<Expression> name) {
+    Tracer tracer("parseAssignExpression");
+    nextToken();
+    auto assignExp = std::make_unique<AssignExpression>(std::move(name));
+    assignExp->Expression_ = parseExpression(Precedence::LOWEST);
+    if (peekTokenIs(NEWLINE, EOF_TOKEN)) {
+        nextToken();
+    }
+    return assignExp;
 }
 
 // Helper functions

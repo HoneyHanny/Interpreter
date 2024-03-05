@@ -9,7 +9,7 @@ std::unordered_map<std::string, TokenType> keywords = {
     {"FALSE", FALSE},
     {"IF", IF},
     {"ELSE", ELSE},
-    {"DISPLAY", DISPLAY},
+    //{"DISPLAY", DISPLAY},
     {"RETURN", RETURN},
     {"INT", INT},
     {"CHAR", CHAR},

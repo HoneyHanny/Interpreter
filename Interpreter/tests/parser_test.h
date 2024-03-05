@@ -10,6 +10,7 @@
 using LiteralTypeValues = std::variant<int64_t, std::string, bool>;
 
 void TestTypedDeclStatements();
+void TestTypedDeclStatementsV2_1();
 void TestReturnStatements();
 void TestIdentifierExpression();
 void TestNumericalLiteralExpression();

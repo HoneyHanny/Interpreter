@@ -207,7 +207,7 @@ public:
     }
 };
 
-using BuiltinFunction = std::function<std::shared_ptr<Object>(const std::vector<std::shared_ptr<Object>>&)>;
+using BuiltinFunction = std::function<std::shared_ptr<Object>(const std::vector<std::shared_ptr<Object>>&, std::shared_ptr<Environment> env)>;
 
 class Builtin : public Object {
 public:

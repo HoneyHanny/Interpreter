@@ -70,7 +70,7 @@ public:
 // Subtree structure: <TYPE> <IDENT> <ASSIGN> <EXPRESSION>
 class TypedDeclStatement : public Statement {
 public:
-    Token token; // <TYPE>
+    Token token = {"NONE", ""}; // <TYPE>
     std::unique_ptr<Identifier> Name; // <IDENT>
     std::unique_ptr<Expression> Value; // <EXPRESSION>
 
@@ -79,7 +79,10 @@ public:
 
     TypedDeclStatement(const Token& token, std::unique_ptr<Identifier> name)
         : token(token), Name(std::move(name)) {}
-    
+
+    //TypedDeclStatement(std::unique_ptr<Identifier> name, std::unique_ptr<Identifier> value)
+    //    : Name(std::move(name)), Value(std::move(value)) {}
+
     TypedDeclStatement(const Token& token, std::unique_ptr<Identifier> name, std::unique_ptr<Identifier> value)
         : token(token), Name(std::move(name)), Value(std::move(value)) {}
 
@@ -89,10 +92,14 @@ public:
     std::string String() const override {
         std::ostringstream out;
 
-        out << TokenLiteral() << " ";
+        if (token.Type != "NONE") {
+            out << TokenLiteral();
+        }
+
+        out << " ";
         out << Name->String(); 
         
-        if (Value != nullptr) {
+        if (Value) {
             out << " = ";
             out << Value->String();
         }
@@ -146,8 +153,8 @@ public:
 // Subtree structure: <EXPRESSION> ... <EXPRESSION> 
 class ExpressionStatement : public Statement {
 public:
-    Token token; // <First token of the expression>
-    std::unique_ptr<Expression> name; // Optional name
+    Token token = {"NONE", ""}; // <First token of the expression>
+    std::unique_ptr<Expression> name;
     std::unique_ptr<Expression> Expression_; // <EXPRESSION>
 
     ExpressionStatement(const Token& token)
@@ -491,5 +498,40 @@ public:
         clonedCallExpr->Arguments = std::move(clonedArgs);
 
         return clonedCallExpr;
+    }
+};
+
+class AssignExpression : public Expression {
+public:
+    std::unique_ptr<Expression> name;
+    std::unique_ptr<Expression> Expression_; 
+
+    AssignExpression(std::unique_ptr<Expression> name)
+        : name(std::move(name)) {}
+
+    std::string String() const override {
+        std::ostringstream out;
+
+        out << name->String() << " ";
+
+        if (Expression_ != nullptr) {
+            out << Expression_->String();
+        }
+        else {
+            out << "";
+        }
+
+        return out.str();
+    }
+
+    void expressionNode() override {}
+    std::string TokenLiteral() const override { return ""; }
+
+    std::unique_ptr<Expression> clone() const override {
+        auto clonedName = std::unique_ptr<Expression>(static_cast<Expression*>(name->clone().release()));
+        auto clonedExpression = std::unique_ptr<Expression>(static_cast<Expression*>(Expression_->clone().release()));
+        auto clonedExpr = std::make_unique<AssignExpression>(std::move(clonedName));
+        clonedExpr->Expression_ = std::move(clonedExpression);
+        return clonedExpr;
     }
 };

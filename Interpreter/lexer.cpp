@@ -107,14 +107,13 @@ Token Lexer::NextToken() {
     case '}':
         tok = { RBRACE, std::string(1, ch) };
         break;
-    case '[':
-        tok = { LSQBRACE, std::string(1, ch) };
-        break;
-    case ']':
-        tok = { RSQBRACE, std::string(1, ch) };
+    case '[': // HERE
+        tok.Literal = escapeString();
+        tok.Type = STRING;
         break;
     case '#':
-        tok = { HASH, std::string(1, ch) };
+        skipComment();
+        tok = { NEWLINE, std::string(1, ch) };
         break;
     case '.':
         tok = { DOT, std::string(1, ch) };
@@ -212,12 +211,43 @@ std::string Lexer::readNumber() {
 
 // Read strings
 std::string Lexer::readString() {
+    std::string str;
     int startPosition = position + 1;
     while (true) {
         readChar();
+        if (ch == '[') {
+            str += escapeString();
+            continue;
+        }
         if (ch == '"' || ch == 0) {
             break;
         }
+        str += ch;
     }
-    return input.substr(startPosition, position - startPosition);
+    return str;
+}
+
+void Lexer::skipComment() {
+    while (ch != '\n' && ch != 0) {
+        readChar();  
+    }
+    //readChar();
+}
+
+std::string Lexer::escapeString() {
+    int startPosition = position + 1;
+    while (true) {
+        readChar();
+        if (ch == ']' || ch == 0) {
+            break;
+        }
+    }
+
+    std::string substring = input.substr(startPosition, position - startPosition);
+
+    if (substring == "NEWLINE") {
+        return "\n";
+    }
+
+    return substring;
 }

@@ -33,10 +33,9 @@ public:
         setupPrefixParseFns();
         setupInfixParseFns();
     }
-
-    bool isFirstIfExpression = true; // Flag to handle multiple IF statements
-    bool isFirstElseExpression = true; // Flag to handle multiple ELSE statements
-    bool isFirstFunctionLiteral = true; // Flag to handle multiple FUNCTION statements
+    
+    Token currentParsedType = {"", ""};
+    std::unique_ptr<Expression> currentParsedCallName = nullptr;
 
     std::unique_ptr<Program> ParseProgram();
     std::unique_ptr<Statement> parseStatement();
@@ -58,6 +57,7 @@ public:
     std::unique_ptr<Expression> parseFunctionLiteral(Token fnToken, std::unique_ptr<Expression> CallName);
     std::unique_ptr<Expression> parseCallExpression(std::unique_ptr<Expression> function);
     std::vector<std::unique_ptr<Expression>> parseCallArguments();
+    std::unique_ptr<Expression> parseAssignExpression(std::unique_ptr<Expression> name);
 
     // Helper functions
 
@@ -100,6 +100,7 @@ public:
         {SLASH, Precedence::PRODUCT},
         {ASTERISK, Precedence::PRODUCT},
         {COLON, Precedence::CALL},
+        {ASSIGN, Precedence::CALL},
     };
 private:
     std::unique_ptr<Lexer> lexer; 
@@ -144,9 +145,32 @@ private:
             return this->parseIfExpression();
         }); 
 
- /*       registerPrefix(FUNCTION, [this]() -> std::unique_ptr<Expression> {
-            return this->parseFunctionLiteral();
-        });*/
+        registerPrefix(FUNCTION, [this]() -> std::unique_ptr<Expression> {
+            std::cout << "calling function stmt parser" << std::endl;
+            currentParsedType = {FUNCTION, "FUNCTION"};
+            auto stmt = std::make_unique<ExpressionStatement>(curToken);
+            Token fnToken = curToken;
+
+            nextToken();
+
+            currentParsedCallName = parseIdentifier();
+
+            //if (peekTokenIs(LPAREN)) {
+            //    return parseFunctionLiteral(fnToken, std::move(callName));
+            //}
+            if (peekTokenIs(ASSIGN)) {
+                nextToken();
+                nextToken();
+
+                //stmt->name = std::move(callName);
+                return parseExpression(Precedence::LOWEST);
+            }
+            std::cout << "returned function" << std::endl;
+            std::cout << "Call name: " << currentParsedCallName->String() << std::endl;
+
+            auto fnexp = parseFunctionLiteral(fnToken, std::move(currentParsedCallName));
+            return fnexp;
+        });
 
         registerPrefix(STRING, [this]() -> std::unique_ptr<Expression> {
             return this->parseStringLiteral();
@@ -192,6 +216,10 @@ private:
 
         registerInfix(COLON, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
             return this->parseCallExpression(std::move(left));
+        });
+
+        registerInfix(ASSIGN, [this](std::unique_ptr<Expression> left) -> std::unique_ptr<Expression> {
+            return this->parseAssignExpression(std::move(left));
         });
     }
 

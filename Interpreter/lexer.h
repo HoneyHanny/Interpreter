@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <iostream>
 #include "Token.h"
 
 class Lexer {
@@ -20,7 +21,9 @@ private:
     std::string readIdentifier(); // Check if keyword or identifier
     std::string readNumber(); // Check if number
     std::string readString(); // Read strings
+    void skipComment();
     void skipWhitespace(); // Skips whitespace in code
+    std::string escapeString(); // Escape string syntax
     TokenType lookupIdent(const std::string& ident); // Distinguishes between keywords and identifiers
 
     static bool isLetter(char ch) {

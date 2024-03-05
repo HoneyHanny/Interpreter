@@ -10,14 +10,18 @@ void ExecuteTestCases() {
     //std::cout << "Test 1: " << std::endl;
     //TestNextToken();
 
-    //std::cout << "Test 2: " << std::endl;
-    //TestNextToken2();
+   /* std::cout << "Test 2: " << std::endl;
+    TestNextToken2();*/
+
+    //std::cout << "Test 2.5: " << std::endl;
+    //TestNextToken2_5();
 
     //std::cout << "Test 3: " << std::endl;
     //TestNextToken3();
 
     // Testing for parser
     //TestTypedDeclStatements();
+    //TestTypedDeclStatementsV2_1();
     //TestReturnStatements();
     //TestIdentifierExpression();
     //TestNumericalLiteralExpression();
@@ -44,6 +48,7 @@ void ExecuteTestCases() {
     //TestIfElseExpressions();
     //TestReturnStatementsV2();
     //TestErrorHandling();
+    //TestTypedDeclStatementsV2();
     //TestFunctionObject();
     //TestFunctionApplication();
     //TestClosures();

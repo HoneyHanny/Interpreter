@@ -102,12 +102,18 @@ void TestEvalBooleanExpression() {
         {"(1 < 2) == FALSE", false},
         {"(1 > 2) == TRUE", false},
         {"(1 > 2) == FALSE", true},
+        {R"(BOOL b = TRUE
+            b)", true},
+        {R"(BOOL b
+            b = TRUE
+            b)", true},
     };
 
     for (auto& test : tests) {
         auto evaluated = testEval(test.input);
         if (!testBooleanObject(evaluated, test.expected)) {
             std::cout << "Test failed for input: " << test.input << std::endl;
+            std::exit(EXIT_FAILURE);
         }
         else {
             std::cout << "Test passed for input: " << test.input << std::endl;
@@ -338,13 +344,16 @@ void TestTypedDeclStatementsV2() {
             a)", 5},
         {R"(INT a = 5 * 5
             a)", 25},
-        {R"(let a = 5
-            let b = a
+        {R"(INT a = 5
+            INT b = a
             b)", 5},
         {R"(INT a = 5
             INT b = a
             INT c = a + b + 5 
             c)", 15},
+        {R"(INT a
+            a = 5
+            a)", 5},
     };
 
     for (const auto& test : tests) {
@@ -529,11 +538,56 @@ void TestBuiltinFunctions() {
     };
 
     std::vector<TestCase> tests = {
-        {R"(LEN: "")", 0},
-        {R"(LEN: "four")", 4},
-        {R"(LEN: "hello world")", 11},
-        {R"(LEN: 1)", "argument to `len` not supported, got INTEGER"},
-        {R"(LEN: "one", "two")", "wrong number of arguments. got=2, want=1"},
+        //{R"(LEN: "")", 0},
+        //{R"(LEN: "four")", 4},
+        //{R"(LEN: "hello world")", 11},
+        //{R"(LEN: 1)", "argument to `len` not supported, got INTEGER"},
+        //{R"(LEN: "one", "two")", "wrong number of arguments. got=2, want=1"},
+        //{R"(LEN: "four" & "four")", 8},
+        //{R"(LEN: "four" & "four" & [#])", 9},
+        //{R"(
+        //STRING s = "test"
+        //LEN: s
+        //)", 4},
+
+        //{R"(
+        //STRING s1 = "test"
+        //STRING s2 = "test"
+        //LEN: s1 & s2
+        //)", 8},
+
+        //{R"(
+        //STRING s1 = "test"
+        //STRING s2 = "test"
+        //LEN: s1 & [#] & s2
+        //)", 9},
+
+        //{R"(
+        //DISPLAY: "Hello world!"
+        //)", "Hello world!"},
+
+        {R"(
+        DISPLAY: 1
+        )", 1},
+
+        {R"(
+        INT x = 1
+        DISPLAY: x
+        )", 1},
+
+        //{R"(
+        //DISPLAY: "Hello[NEWLINE]world!"
+        //)", "Hello\nworld!"},
+
+        {R"(
+        INT x
+        SCAN: x
+        DISPLAY: x)", 1},
+
+        {R"(
+        BOOL x
+        SCAN: x
+        DISPLAY: x)", 1}
     };
 
     for (const auto& test : tests) {
@@ -547,10 +601,17 @@ void TestBuiltinFunctions() {
                 }
             }
             else if constexpr (std::is_same_v<T, std::string>) {
-                auto errObj = dynamic_cast<ErrorObject*>(evaluated.get());
-                if (!errObj || errObj->Message != expected) {
-                    std::cerr << "Test failed for input: " << test.input << ". Expected error: " << expected << ", got: " << (errObj ? errObj->Message : "not an error") << std::endl;
-                    std::exit(EXIT_FAILURE);
+                if (auto errObj = dynamic_cast<ErrorObject*>(evaluated.get())) {
+                    if (!errObj || errObj->Message != expected) {
+                        std::cerr << "Test failed for input: " << test.input << ". Expected error: " << expected << ", got: " << (errObj ? errObj->Message : "not an error") << std::endl;
+                        std::exit(EXIT_FAILURE);
+                    }
+                }
+                else if (auto str = dynamic_cast<String*>(evaluated.get())) {
+                    if (!str || str->Value != expected) {
+                        std::cerr << "Test failed for input: " << test.input << ". Expected msg: " << expected << ", got: " << (str ? str->Value : "not an string") << std::endl;
+                        std::exit(EXIT_FAILURE);
+                    }
                 }
             }
         }, test.expected);

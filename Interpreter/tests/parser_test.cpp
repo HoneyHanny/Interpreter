@@ -26,8 +26,8 @@ static void checkParserErrors(const Parser& parser) {
 
 bool testTypedDeclStatement(Statement* s, const std::string& name) {
     std::string tokenLiteral = s->TokenLiteral();
-    if (tokenLiteral != "INT" && tokenLiteral != "FLOAT" && tokenLiteral != "BOOL" && tokenLiteral != "CHAR") {
-        std::cerr << "s.TokenLiteral not one of 'INT', 'FLOAT', 'BOOL', 'CHAR'. got=" << tokenLiteral << std::endl;
+    if (tokenLiteral != "INT" && tokenLiteral != "FLOAT" && tokenLiteral != "BOOL" && tokenLiteral != "CHAR" && tokenLiteral != "STRING") {
+        std::cerr << "s.TokenLiteral not one of 'INT', 'FLOAT', 'BOOL', 'CHAR', 'STRING'. got=" << tokenLiteral << std::endl;
         return false;
     }
 
@@ -49,6 +49,7 @@ INT x = 5
 FLOAT y = 10
 CHAR foobar = 10
 INT test
+STRING str = "string"
 )";
         
 
@@ -64,12 +65,12 @@ INT test
     checkParserErrors(parser);
 
     std::cout << program->Statements.size() << std::endl;
-    if (program->Statements.size() != 4) {
-        std::cerr << "program.Statements does not contain 4 statements. got=" << program->Statements.size() << std::endl;
+    if (program->Statements.size() != 5) {
+        std::cerr << "program.Statements does not contain 5 statements. got=" << program->Statements.size() << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
-    std::vector<std::string> tests = {"x", "y", "foobar", "test"};
+    std::vector<std::string> tests = {"x", "y", "foobar", "test", "str"};
 
     for (size_t i = 0; i < tests.size(); ++i) {
         std::cout << "Typed Statement: " << program->Statements[i].get()->String() << std::endl;
@@ -81,6 +82,66 @@ INT test
     
     std::cout << "All tests passed!" << std::endl;
     
+}
+
+void TestTypedDeclStatementsV2_1() {
+    std::string input = R"(
+INT test
+test = 10
+)";
+
+    auto lexer = std::make_unique<Lexer>(input);
+    Parser parser(std::move(lexer));
+
+    auto program = parser.ParseProgram();
+    if (program == nullptr) {
+        std::cerr << "ParseProgram() returned nullptr" << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    checkParserErrors(parser);
+
+    std::cout << program->Statements.size() << std::endl;
+    if (program->Statements.size() != 2) {
+        std::cerr << "program.Statements does not contain 2 statements. got=" << program->Statements.size() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto stmt = dynamic_cast<TypedDeclStatement*>(program->Statements[0].get());
+    if (!stmt) {
+        std::cerr << "program.Statements[0] is not TypedDeclStatement." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto stmt1 = dynamic_cast<ExpressionStatement*>(program->Statements[1].get());
+    if (!stmt1) {
+        std::cerr << "program.Statements[1] is not ExpressionStatement." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+    
+    std::cout << stmt1->token.Type << " | " << stmt1->token.Literal << std::endl;
+    std::cout << stmt1->Expression_->String() << " | " << stmt1->token.Literal << std::endl;
+
+    auto stmt2 = dynamic_cast<AssignExpression*>(stmt1->Expression_.get());
+    if (!stmt2) {
+        std::cerr << "stmt1->Expression_ is not AssignExpression." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto stmt3 = dynamic_cast<Identifier*>(stmt2->name.get());
+    if (!stmt3) {
+        std::cerr << "stmt2->name is not Identifier." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto stmt4 = dynamic_cast<NumericalLiteral*>(stmt2->Expression_.get());
+    if (!stmt4) {
+        std::cerr << "stmt2->Expression_ is not NumericalLiteral. Got: " << stmt2->Expression_->String() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    std::cout << "All tests passed!" << std::endl;
+
 }
 
 bool testReturnStatement(Statement* s, const std::string& name) {

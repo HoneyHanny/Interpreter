@@ -2,7 +2,7 @@
 
 std::unordered_map<std::string, std::shared_ptr<Builtin>> builtins = {
     {"LEN", std::make_shared<Builtin>(
-        [](const std::vector<std::shared_ptr<Object>>& args) -> std::shared_ptr<Object> {
+        [](const std::vector<std::shared_ptr<Object>>& args, std::shared_ptr<Environment> env) -> std::shared_ptr<Object> {
             if (args.size() != 1) {
                 return std::make_shared<ErrorObject>("wrong number of arguments. got=" + std::to_string(args.size()) + ", want=1");
             }
@@ -10,8 +10,73 @@ std::unordered_map<std::string, std::shared_ptr<Builtin>> builtins = {
             if (auto str = std::dynamic_pointer_cast<String>(args[0])) {
                 return std::make_shared<IntegerObject>(static_cast<int64_t>(str->Value.length()));
             } else {
-                return std::make_shared<ErrorObject>("argument to `len` not supported, got " + args[0]->Type());
+                return std::make_shared<ErrorObject>("argument to `LEN` not supported, got " + args[0]->Type());
             }
+        }
+    )},
+    {"DISPLAY", std::make_shared<Builtin>(
+        [](const std::vector<std::shared_ptr<Object>>& args, std::shared_ptr<Environment> env) -> std::shared_ptr<Object> {
+            if (args.size() != 1) {
+                return std::make_shared<ErrorObject>("wrong number of arguments. got=" + std::to_string(args.size()) + ", want=1");
+            }
+            // Return 1 for success code
+            if (auto str = std::dynamic_pointer_cast<String>(args[0])) {
+                std::cout << "Display: " << str->Value << std::endl;
+                return std::make_shared<IntegerObject>(1);  
+                //return str;
+            }
+            if (auto num = std::dynamic_pointer_cast<IntegerObject>(args[0])) {
+                std::cout << "Display: " << num->Value << std::endl;
+                return std::make_shared<IntegerObject>(1);
+                //return num;
+            }
+            else {
+              return std::make_shared<ErrorObject>("argument to `DISPLAY` not supported, got " + args[0]->Type());
+            }
+        }
+    )},
+    {"SCAN", std::make_shared<Builtin>(
+        [](const std::vector<std::shared_ptr<Object>>& args, std::shared_ptr<Environment> env) -> std::shared_ptr<Object> {
+            
+            for (const auto& arg : args) {
+                //std::cout << "SCAN INSPECT: " << arg->Inspect() << std::endl;
+                std::string varName = env->GetNameByObject(arg);
+                std::cout << "SCAN INSPECT: " << varName << std::endl;
+                std::cout << "SCAN INSPECT: " << env->GetType(varName).Type << std::endl;
+                //std::string input;
+                //std::cout << "Input: ";
+                //std::getline(std::cin, input);
+                //std::cout << input << std::endl;
+
+                auto varType = env->GetType(varName);
+
+                std::string input;
+                std::cout << varName << ": ";
+                std::getline(std::cin, input);
+
+                try {
+                    if (varType.Type == INT) {
+                        std::cout << "Got INT type." << std::endl;
+                        int value = std::stoi(input);
+                        env->Set(varName, varType, std::make_shared<IntegerObject>(value));
+                    }
+                    else if (varType.Type == STRING) {
+                        std::cout << "Got STRING type." << std::endl;
+                        env->Set(varName, varType, std::make_shared<String>(input));
+                    }
+                    else {
+                        std::cout << "Unsupported type for SCAN: " << varType.Type << std::endl;
+                    }
+                }
+                catch (const std::invalid_argument& e) {
+                    return std::make_shared<ErrorObject>("Invalid input for type " + varType.Literal);
+                }
+                catch (const std::out_of_range& e) {
+                    return std::make_shared<ErrorObject>("Input out of range for type " + varType.Literal);
+                }
+            }
+            // Return 1 for success code
+            return std::make_shared<IntegerObject>(1);
         }
     )},
 };
@@ -249,7 +314,7 @@ static std::shared_ptr<Object> evalBlockStatement(const BlockStatement* block, c
 }
 
 static std::shared_ptr<Object> evalIdentifier(const Identifier* node, const std::shared_ptr<Environment>& env) {
-    auto val = env->Get(node->Value);
+    auto val = env->GetObject(node->Value);
     if (val) {
         return val; 
     }
@@ -284,7 +349,7 @@ static std::shared_ptr<Environment> extendFunctionEnv(const Function& fn, const 
     auto extendedEnv = std::make_shared<Environment>(fn.Env);
 
     for (size_t i = 0; i < fn.Parameters.size(); ++i) {
-        extendedEnv->Set(fn.Parameters[i]->Name->Value, args[i]);
+        extendedEnv->Set(fn.Parameters[i]->Name->Value, Token(FUNCTION, "FUNCTION"), args[i]);
     }
 
     return extendedEnv;
@@ -297,14 +362,14 @@ static std::shared_ptr<Object> unwrapReturnValue(std::shared_ptr<Object>& obj) {
     return obj;
 }
 
-std::shared_ptr<Object> applyFunction(std::shared_ptr<Object>& fn, const std::vector<std::shared_ptr<Object>>& args) {
+std::shared_ptr<Object> applyFunction(std::shared_ptr<Object>& fn, const std::vector<std::shared_ptr<Object>>& args, std::shared_ptr<Environment> env) {
     if (auto function = std::dynamic_pointer_cast<Function>(fn)) {
         auto extendedEnv = extendFunctionEnv(*function, args);
         auto evaluated = Eval(function->Body.get(), extendedEnv);
         return unwrapReturnValue(evaluated);
     }
     else if (auto builtin = std::dynamic_pointer_cast<Builtin>(fn)) {
-        return builtin->Fn(args); // Call the builtin function with args
+        return builtin->Fn(args, env); // Call the builtin function with args
     }
     else {
         return std::make_shared<ErrorObject>("not a function: " + fn->Inspect());
@@ -321,10 +386,10 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
             if (isError(val)) {
                 return val;
             }
-            env->Set(exprStmtNode->name->TokenLiteral(), val);
+            env->Set(exprStmtNode->name->TokenLiteral(), exprStmtNode->token, val);
         }
         else {
-        return Eval(exprStmtNode->Expression_.get(), env);
+            return Eval(exprStmtNode->Expression_.get(), env);
         }
     } 
     else if (auto numLit = dynamic_cast<const NumericalLiteral*>(node)) {
@@ -368,11 +433,16 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
         return std::make_unique<ReturnValue>(val);
     }
     else if (const auto* typedDeclStmt = dynamic_cast<const TypedDeclStatement*>(node)) {
-        auto val = Eval(typedDeclStmt->Value.get(), env);
-        if (isError(val)) {
-            return val;
+        if (typedDeclStmt->Value) {
+            auto val = Eval(typedDeclStmt->Value.get(), env);
+            if (isError(val)) {
+                return val;
+            }
+            env->Set(typedDeclStmt->Name->Value, typedDeclStmt->token, val);
         }
-        env->Set(typedDeclStmt->Name->Value, val);
+        else {
+            env->Set(typedDeclStmt->Name->Value, typedDeclStmt->token, std::make_unique<NullObject>());
+        }
     }
     else if (const auto* ident = dynamic_cast<const Identifier*>(node)) {
         return evalIdentifier(ident, env);
@@ -388,7 +458,7 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
 
         auto fnObject = std::make_shared<Function>(funcLit->type, std::move(funcLit->CallName->clone()), std::move(params), std::move(body), env);
         
-        env->Set(fnObject->CallName->TokenLiteral(), fnObject);
+        env->Set(fnObject->CallName->TokenLiteral(), Token(FUNCTION, "FUNCTION"), fnObject);
 
         return fnObject;
     }
@@ -405,9 +475,16 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
             return std::move(args.front());
         }
 
-        auto result = applyFunction(function, args);
+        auto result = applyFunction(function, args, env);
 
         return result;
+    }
+    else if (const auto* assignExpr = dynamic_cast<const AssignExpression*>(node)) {
+        auto val = Eval(assignExpr->Expression_.get(), env);
+        if (isError(val)) {
+            return val;
+        }
+        env->Set(assignExpr->name->TokenLiteral(), Token("",""), val); // TODO FIX THIS LATER
     }
     return nullptr;
 }
