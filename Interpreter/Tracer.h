@@ -26,14 +26,9 @@ private:
     std::string funcName;
 
     void printIndent(const std::string& message) {
-        if (indentLevel != 0) {
-			for (int i = 0; i < indentLevel; i++)
-                std::cout << "| ";
-            std::cout << message;
-        }
-        else {
-            std::cout << message;
-        }
+		for (int i = 0; i < indentLevel; i++)
+			std::cout << "| ";
+        std::cout << message;
     }
 };
 
