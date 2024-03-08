@@ -26,9 +26,16 @@ private:
     std::string funcName;
 
     void printIndent(const std::string& message) {
-        std::cout << std::string(indentLevel * 2, ' ') << message;
+        if (indentLevel != 0) {
+			for (int i = 0; i < indentLevel; i++)
+                std::cout << "| ";
+            std::cout << message;
+        }
+        else {
+            std::cout << message;
+        }
     }
 };
 
 int Tracer::indentLevel = 0;
-bool Tracer::trace = false; // Set to true for function tracing;
+bool Tracer::trace = true; // Set to true for function tracing;
