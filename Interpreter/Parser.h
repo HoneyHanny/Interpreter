@@ -49,6 +49,7 @@ public:
     std::unique_ptr<Expression> parseIdentifier();
     std::unique_ptr<Expression> parseNumericalLiteral();
     std::unique_ptr<Expression> parseStringLiteral();
+    std::unique_ptr<Expression> parseCharLiteral();
     std::unique_ptr<Expression> parsePrefixExpression();
     std::unique_ptr<Expression> parseInfixExpression(std::unique_ptr<Expression> left);
     std::unique_ptr<Expression> parseBoolean();
@@ -174,6 +175,10 @@ private:
 
         registerPrefix(STRING, [this]() -> std::unique_ptr<Expression> {
             return this->parseStringLiteral();
+        });
+
+        registerPrefix(CHAR, [this]() -> std::unique_ptr<Expression> {
+            return this->parseCharLiteral();
         });
     }
 

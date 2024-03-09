@@ -119,7 +119,10 @@ Token Lexer::NextToken() {
         tok = { DOT, std::string(1, ch) };
         break;
     case '\'':
-        tok = { S_QUOTE, std::string(1, ch) };
+        tok = {
+            CHAR,
+            readCharString(),
+        };
         break;
     case '"': 
         tok = { 
@@ -220,6 +223,20 @@ std::string Lexer::readString() {
             continue;
         }
         if (ch == '"' || ch == 0) {
+            break;
+        }
+        str += ch;
+    }
+    return str;
+}
+
+// Read char
+std::string Lexer::readCharString() {
+    std::string str;
+    int startPosition = position + 1;
+    while (true) {
+        readChar();
+        if (ch == '\'' || ch == 0) {
             break;
         }
         str += ch;

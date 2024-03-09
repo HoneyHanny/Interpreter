@@ -21,6 +21,7 @@ private:
     std::string readIdentifier(); // Check if keyword or identifier
     std::string readNumber(); // Check if number
     std::string readString(); // Read strings
+    std::string readCharString(); // Read char 
     void skipComment();
     void skipWhitespace(); // Skips whitespace in code
     std::string escapeString(); // Escape string syntax

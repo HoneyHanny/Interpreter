@@ -30,6 +30,11 @@ std::unordered_map<std::string, std::shared_ptr<Builtin>> builtins = {
                 return std::make_shared<IntegerObject>(1);
                 //return num;
             }
+            if (auto bl = std::dynamic_pointer_cast<BooleanObject>(args[0])) {
+                std::cout << "Display: " << bl->Value << std::endl;
+                return std::make_shared<IntegerObject>(1);
+                //return num;
+            }
             else {
               return std::make_shared<ErrorObject>("argument to `DISPLAY` not supported, got " + args[0]->Type());
             }
@@ -43,37 +48,39 @@ std::unordered_map<std::string, std::shared_ptr<Builtin>> builtins = {
                 std::string varName = env->GetNameByObject(arg);
                 std::cout << "SCAN INSPECT: " << varName << std::endl;
                 std::cout << "SCAN INSPECT: " << env->GetType(varName).Type << std::endl;
-                //std::string input;
-                //std::cout << "Input: ";
-                //std::getline(std::cin, input);
-                //std::cout << input << std::endl;
 
                 auto varType = env->GetType(varName);
+                std::cout << "Got " << varType.Type << " type." << std::endl;
+
+                if (varType.Type != INT && varType.Type != BOOL && varType.Type != STRING) {
+                    return std::make_shared<ErrorObject>("Unsupported type for SCAN: " + varType.Literal);
+                }
 
                 std::string input;
-                std::cout << varName << ": ";
+                std::cout << "Enter input for " << varName << ": ";
                 std::getline(std::cin, input);
 
-                try {
-                    if (varType.Type == INT) {
-                        std::cout << "Got INT type." << std::endl;
+                
+                if (varType.Type == INT) {
+                    try {
                         int value = std::stoi(input);
                         env->Set(varName, varType, std::make_shared<IntegerObject>(value));
                     }
-                    else if (varType.Type == STRING) {
-                        std::cout << "Got STRING type." << std::endl;
-                        env->Set(varName, varType, std::make_shared<String>(input));
+                    catch (const std::invalid_argument& e) {
+                        return std::make_shared<ErrorObject>("Invalid input for type " + varType.Literal);
                     }
-                    else {
-                        std::cout << "Unsupported type for SCAN: " << varType.Type << std::endl;
+                    catch (const std::out_of_range& e) {
+                        return std::make_shared<ErrorObject>("Input out of range for type " + varType.Literal);
                     }
                 }
-                catch (const std::invalid_argument& e) {
-                    return std::make_shared<ErrorObject>("Invalid input for type " + varType.Literal);
+                else if (varType.Type == STRING) {
+                    env->Set(varName, varType, std::make_shared<String>(input));
                 }
-                catch (const std::out_of_range& e) {
-                    return std::make_shared<ErrorObject>("Input out of range for type " + varType.Literal);
+                else if (varType.Type == BOOL) {
+                    bool value = (input == "TRUE" || input == "1");
+                    env->Set(varName, varType, std::make_shared<BooleanObject>(value));
                 }
+
             }
             // Return 1 for success code
             return std::make_shared<IntegerObject>(1);

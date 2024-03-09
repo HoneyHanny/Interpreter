@@ -37,6 +37,7 @@ void ExecuteTestCases() {
     //TestFunctionParameterParsing();
     //TestCallExpressionParsing();
     //TestStringLiteralExpression();
+    //TestCharLiteralExpression();
 
     // Testing for AST
     //TestString();
@@ -51,8 +52,8 @@ void ExecuteTestCases() {
     //TestTypedDeclStatementsV2();
     //TestFunctionObject();
     //TestFunctionApplication();
-    //TestClosures();
+    TestClosures();
     //TestStringLiteral();
     //TestStringConcatenation();
-    TestBuiltinFunctions();
+    //TestBuiltinFunctions();
 }

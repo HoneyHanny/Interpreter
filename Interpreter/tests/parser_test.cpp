@@ -1092,23 +1092,46 @@ void TestStringLiteralExpression() {
     std::cout << "TestStringLiteralExpression passed." << std::endl;
 }
 
-//bool teststringliteral(const std::unique_ptr<expression>& sl, const std::string& value) {
-//    auto stringlit = dynamic_cast<stringliteral*>(sl.get());
-//    if (!stringlit) {
-//        std::cerr << "sl not ast::stringliteral." << std::endl;
-//        return false;
-//    }
-//
-//    if (stringlit->value != value) {
-//        std::cerr << "stringlit.value not '" << value << "'. got='" << stringlit->value << "'" << std::endl;
-//        return false;
-//    }
-//
-//    // assuming tokenliteral() returns the string value without quotes
-//    if (stringlit->tokenliteral() != value) {
-//        std::cerr << "stringlit.tokenliteral not '" << value << "'. got='" << stringlit->tokenliteral() << "'" << std::endl;
-//        return false;
-//    }
-//
-//    return true;
-//}
+void TestCharLiteralExpression() {
+    std::string input = R"('a')";
+    auto lexer = std::make_unique<Lexer>(input);
+    Parser parser(std::move(lexer));
+
+    auto program = parser.ParseProgram();
+    if (program == nullptr) {
+        std::cerr << "ParseProgram() returned nullptr" << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    checkParserErrors(parser);
+
+    if (program->Statements.size() != 1) {
+        std::cerr << "TestCharLiteralExpression failed: program does not contain enough statements. got=" << program->Statements.size() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
+    if (!stmt) {
+        std::cerr << "TestCharLiteralExpression failed: program.Statements[0] is not ExpressionStatement." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto literal = dynamic_cast<CharLiteral*>(stmt->Expression_.get());
+    if (!literal) {
+        std::cerr << "TestCharLiteralExpression failed: exp is not CharLiteral." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (literal->Value != 'a') {
+        std::cerr << "TestCharLiteralExpression failed: literal.Value is not 'a'. got=" << literal->Value << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    // Assuming TokenLiteral returns a string representation of the character.
+    if (literal->TokenLiteral() != "a") {
+        std::cerr << "TestCharLiteralExpression failed: literal.TokenLiteral is not 'a'. got=" << literal->TokenLiteral() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    std::cout << "TestCharLiteralExpression passed." << std::endl;
+}

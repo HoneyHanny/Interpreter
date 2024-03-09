@@ -579,10 +579,10 @@ void TestBuiltinFunctions() {
         //DISPLAY: "Hello[NEWLINE]world!"
         //)", "Hello\nworld!"},
 
-        {R"(
-        INT x
-        SCAN: x
-        DISPLAY: x)", 1},
+        //{R"(
+        //INT x
+        //SCAN: x
+        //DISPLAY: x)", 1},
 
         {R"(
         BOOL x

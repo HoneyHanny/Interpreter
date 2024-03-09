@@ -229,6 +229,25 @@ public:
     }
 };
 
+// Subtree structure: <EXPRESSION>
+class CharLiteral : public Expression {
+public:
+    Token token;
+    char Value; // Changed from std::string to char to represent a CHAR
+
+    CharLiteral(const Token& token, char value)
+        : token(token), Value(value) {}
+
+    std::string String() const override { return "'" + std::string(1, Value) + "'"; } // Adjusted for char
+
+    void expressionNode() override {}
+    std::string TokenLiteral() const override { return token.Literal; }
+
+    std::unique_ptr<Expression> clone() const override {
+        return std::make_unique<CharLiteral>(token, Value);
+    }
+};
+
 
 // Subtree structure: <prefix operator><EXPRESSION>;
 class PrefixExpression : public Expression {

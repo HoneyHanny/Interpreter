@@ -29,8 +29,9 @@ std::unique_ptr<Statement> Parser::parseStatement() {
     if (curToken.Type == INT 
         || curToken.Type == CHAR 
         || curToken.Type == BOOL
-        || curToken.Type == FLOAT
-        || curToken.Type == STRING) {
+        || curToken.Type == FLOAT)
+        //|| curToken.Type == STRING) 
+    {
 
        /* if (peekTokenIs(NEWLINE)) {
             std::cout << "FN statement" << std::endl;
@@ -278,6 +279,19 @@ std::unique_ptr<Expression> Parser::parseStringLiteral() {
     Tracer tracer("parseStringLiteral");
 
     return std::make_unique<StringLiteral>(curToken, curToken.Literal);
+}
+
+std::unique_ptr<Expression> Parser::parseCharLiteral() {
+    Tracer tracer("parseCharLiteral");
+
+    if (curToken.Literal.length() > 1) {
+        std::string errorMessage = "Character literals must contain only one character. Found '" + curToken.Literal + "'";
+        errors.push_back(errorMessage);
+        return nullptr; 
+    }
+
+    char charValue = curToken.Literal[0];
+    return std::make_unique<CharLiteral>(curToken, charValue);
 }
 
 std::unique_ptr<Expression> Parser::parsePrefixExpression() {
