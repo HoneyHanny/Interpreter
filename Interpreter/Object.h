@@ -22,6 +22,7 @@ enum class ObjectType_ {
     ERROR_OBJ,
     FUNCTION_OBJ,
     STRING_OBJ,
+    CHAR_OBJ,
     BUILTIN,
     // Add other types as needed
 };
@@ -44,6 +45,7 @@ inline std::string ObjectTypeToString(ObjectType_ type) {
         case ObjectType_::ERROR_OBJ: return "ERROR";
         case ObjectType_::FUNCTION_OBJ: return "FUNCTION";
         case ObjectType_::STRING_OBJ: return "STRING";
+        case ObjectType_::CHAR_OBJ: return "CHAR";
             // Add cases for other types
         default: return "UNKNOWN";
     }
@@ -204,6 +206,21 @@ public:
 
     std::string Inspect() const override {
         return Value;
+    }
+};
+
+class Char : public Object {
+public:
+    char Value;
+
+    Char(char value) : Value(value) {}
+
+    ObjectType Type() const override {
+        return ObjectTypeToString(ObjectType_::CHAR_OBJ);
+    }
+
+    std::string Inspect() const override {
+        return std::string(1, Value);
     }
 };
 

@@ -52,8 +52,9 @@ void ExecuteTestCases() {
     //TestTypedDeclStatementsV2();
     //TestFunctionObject();
     //TestFunctionApplication();
-    TestClosures();
+    //TestClosures();
     //TestStringLiteral();
     //TestStringConcatenation();
+    TestCharLiteral();
     //TestBuiltinFunctions();
 }

@@ -29,8 +29,8 @@ std::unique_ptr<Statement> Parser::parseStatement() {
     if (curToken.Type == INT 
         || curToken.Type == CHAR 
         || curToken.Type == BOOL
-        || curToken.Type == FLOAT)
-        //|| curToken.Type == STRING) 
+        || curToken.Type == FLOAT
+        || curToken.Type == STRING) 
     {
 
        /* if (peekTokenIs(NEWLINE)) {

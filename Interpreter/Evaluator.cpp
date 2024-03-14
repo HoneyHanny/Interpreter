@@ -408,6 +408,9 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
     else if (auto str = dynamic_cast<const StringLiteral*>(node)) {
         return std::make_unique<String>(str->Value);
     }
+    else if (auto ch = dynamic_cast<const CharLiteral*>(node)) {
+        return std::make_unique<Char>(ch->Value);
+    }
     else if (auto prefixExpr = dynamic_cast<const PrefixExpression*>(node)) {
         auto right = Eval(prefixExpr->Right.get(), env);
         if (isError(right)) {

@@ -531,6 +531,25 @@ void TestStringConcatenation() {
     std::cout << "TestStringConcatenation passed." << std::endl;
 }
 
+void TestCharLiteral() {
+    std::string input = R"('a')"; // Single quote for char
+
+    auto evaluated = testEval(input);
+
+    auto chr = dynamic_cast<Char*>(evaluated.get());
+    if (!chr) {
+        std::cerr << "Object is not Char. Got=" << typeid(*evaluated).name() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (chr->Value != 'a') {
+        std::cerr << "Char has wrong value. Got=\"" << chr->Value << "\"" << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    std::cout << "TestCharLiteral passed." << std::endl;
+}
+
 void TestBuiltinFunctions() {
     struct TestCase {
         std::string input;
@@ -538,8 +557,8 @@ void TestBuiltinFunctions() {
     };
 
     std::vector<TestCase> tests = {
-        //{R"(LEN: "")", 0},
-        //{R"(LEN: "four")", 4},
+        {R"(LEN: "")", 0},
+        {R"(LEN: "four")", 4},
         //{R"(LEN: "hello world")", 11},
         //{R"(LEN: 1)", "argument to `len` not supported, got INTEGER"},
         //{R"(LEN: "one", "two")", "wrong number of arguments. got=2, want=1"},
@@ -550,21 +569,21 @@ void TestBuiltinFunctions() {
         //LEN: s
         //)", 4},
 
-        //{R"(
-        //STRING s1 = "test"
-        //STRING s2 = "test"
-        //LEN: s1 & s2
-        //)", 8},
+        {R"(
+        STRING s1 = "test"
+        STRING s2 = "test"
+        LEN: s1 & s2
+        )", 8},
 
-        //{R"(
-        //STRING s1 = "test"
-        //STRING s2 = "test"
-        //LEN: s1 & [#] & s2
-        //)", 9},
+        {R"(
+        STRING s1 = "test"
+        STRING s2 = "test"
+        LEN: s1 & [#] & s2
+        )", 9},
 
-        //{R"(
-        //DISPLAY: "Hello world!"
-        //)", "Hello world!"},
+        {R"(
+        DISPLAY: "Hello world!"
+        )", "Hello world!"},
 
         {R"(
         DISPLAY: 1
@@ -573,6 +592,11 @@ void TestBuiltinFunctions() {
         {R"(
         INT x = 1
         DISPLAY: x
+        )", 1},
+
+        {R"(
+        STRING s = "test"
+        DISPLAY: s
         )", 1},
 
         //{R"(

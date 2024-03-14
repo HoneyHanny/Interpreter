@@ -109,7 +109,7 @@ Token Lexer::NextToken() {
         break;
     case '[': // HERE
         tok.Literal = escapeString();
-        tok.Type = STRING;
+        tok.Type = STRING_LITERAL;
         break;
     case '#':
         skipComment();
@@ -120,13 +120,13 @@ Token Lexer::NextToken() {
         break;
     case '\'':
         tok = {
-            CHAR,
+            CHAR_LITERAL,
             readCharString(),
         };
         break;
     case '"': 
         tok = { 
-            STRING, 
+            STRING_LITERAL, 
             readString(),
         };
         break;

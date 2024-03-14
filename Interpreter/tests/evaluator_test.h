@@ -25,4 +25,5 @@ void TestFunctionApplication();
 void TestClosures();
 void TestStringLiteral();
 void TestStringConcatenation();
+void TestCharLiteral();
 void TestBuiltinFunctions();

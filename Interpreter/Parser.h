@@ -173,11 +173,11 @@ private:
             return fnexp;
         });
 
-        registerPrefix(STRING, [this]() -> std::unique_ptr<Expression> {
+        registerPrefix(STRING_LITERAL, [this]() -> std::unique_ptr<Expression> {
             return this->parseStringLiteral();
         });
 
-        registerPrefix(CHAR, [this]() -> std::unique_ptr<Expression> {
+        registerPrefix(CHAR_LITERAL, [this]() -> std::unique_ptr<Expression> {
             return this->parseCharLiteral();
         });
     }
