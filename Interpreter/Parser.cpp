@@ -258,21 +258,46 @@ std::unique_ptr<Expression> Parser::parseIdentifier() {
 std::unique_ptr<Expression> Parser::parseNumericalLiteral() {
     Tracer tracer("parseNumericalLiteral");
 
-    auto lit = std::make_unique<NumericalLiteral>(curToken);
+    if (peekTokenIs(DOT)) {
+        // Handle float
+        std::string floatLiteral = curToken.Literal;
+        nextToken(); // Consume the '.'
+        if (!expectPeek(NUM)) {
+            std::string msg = "expected number after dot, got " + peekToken.Literal;
+            errors.push_back(msg);
+            return nullptr;
+        }
+        floatLiteral += "." + curToken.Literal;
+        char* end;
+        double value = std::strtod(floatLiteral.c_str(), &end);
 
-    char* end;
-    // strtol can convert a string to a long int, considering the base
-    long int value = std::strtol(curToken.Literal.c_str(), &end, 10); // Using base 10 for conversion
+        //if (!peekTokenIs(NEWLINE, EOF_TOKEN)) { TODO: Figure out how to enforce strict formatting for floats and ints
+        //    std::string msg = "unexpected text in float literal";
+        //    errors.push_back(msg);
+        //    return nullptr;
+        //}
 
-    if (*end != '\0') { // Check if the entire string was converted
-        std::string msg = "could not parse " + curToken.Literal + " as integer";
-        errors.push_back(msg);
-        return nullptr;
+        if (*end != '\0') { // Check if the entire string was converted
+            std::string msg = "could not parse " + floatLiteral + " as float";
+            errors.push_back(msg);
+            return nullptr;
+        }
+
+        return std::make_unique<FloatLiteral>(Token(FLOAT, floatLiteral), value);
     }
+    else {
+        // Handle integer
+        char* end;
+        long int value = std::strtol(curToken.Literal.c_str(), &end, 10); // Using base 10 for conversion
 
-    lit->Value = value;
+        if (*end != '\0') { // Check if the entire string was converted
+            std::string msg = "could not parse " + curToken.Literal + " as integer";
+            errors.push_back(msg);
+            return nullptr;
+        }
 
-    return lit;
+        return std::make_unique<IntegerLiteral>(curToken, value);
+    }
 }
 
 std::unique_ptr<Expression> Parser::parseStringLiteral() {

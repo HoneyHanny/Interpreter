@@ -13,7 +13,7 @@ void TestTypedDeclStatements();
 void TestTypedDeclStatementsV2_1();
 void TestReturnStatements();
 void TestIdentifierExpression();
-void TestNumericalLiteralExpression();
+void TestIntegerLiteralExpression();
 void TestParsingPrefixExpressions();
 void TestParsingInfixExpressions();
 void TestOperatorPrecedenceParsing();

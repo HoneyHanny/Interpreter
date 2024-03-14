@@ -46,8 +46,8 @@ bool testTypedDeclStatement(Statement* s, const std::string& name) {
 void TestTypedDeclStatements() {
     std::string input = R"(
 INT x = 5
-FLOAT y = 10
-CHAR foobar = 10
+FLOAT y = 10.101
+CHAR foobar = 'a'
 INT test
 STRING str = "string"
 )";
@@ -134,9 +134,9 @@ test = 10
         std::exit(EXIT_FAILURE);
     }
 
-    auto stmt4 = dynamic_cast<NumericalLiteral*>(stmt2->Expression_.get());
+    auto stmt4 = dynamic_cast<IntegerLiteral*>(stmt2->Expression_.get());
     if (!stmt4) {
-        std::cerr << "stmt2->Expression_ is not NumericalLiteral. Got: " << stmt2->Expression_->String() << std::endl;
+        std::cerr << "stmt2->Expression_ is not IntegerLiteral. Got: " << stmt2->Expression_->String() << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
@@ -241,7 +241,7 @@ void TestIdentifierExpression() {
     std::cout << "TestIdentifierExpression passed." << std::endl;
 }
 
-void TestNumericalLiteralExpression() {
+void TestIntegerLiteralExpression() {
     std::string input = "5";
     auto lexer = std::make_unique<Lexer>(input);
     Parser parser(std::move(lexer));
@@ -255,37 +255,37 @@ void TestNumericalLiteralExpression() {
     checkParserErrors(parser);
 
     if (program->Statements.size() != 1) {
-        std::cerr << "TestNumericalLiteralExpression failed: program has not enough statements. got=" << program->Statements.size() << std::endl;
+        std::cerr << "TestIntegerLiteralExpression failed: program has not enough statements. got=" << program->Statements.size() << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
     auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
     if (!stmt) {
-        std::cerr << "TestNumericalLiteralExpression failed: program.Statements[0] is not ExpressionStatement." << std::endl;
+        std::cerr << "TestIntegerLiteralExpression failed: program.Statements[0] is not ExpressionStatement." << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
-    auto literal = dynamic_cast<NumericalLiteral*>(stmt->Expression_.get());
+    auto literal = dynamic_cast<IntegerLiteral*>(stmt->Expression_.get());
     if (!literal) {
-        std::cerr << "TestNumericalLiteralExpression failed: exp not IntegerLiteral." << std::endl;
+        std::cerr << "TestIntegerLiteralExpression failed: exp not IntegerLiteral." << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
     if (literal->Value != 5) {
-        std::cerr << "TestNumericalLiteralExpression failed: literal.Value not 5. got=" << literal->Value << std::endl;
+        std::cerr << "TestIntegerLiteralExpression failed: literal.Value not 5. got=" << literal->Value << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
     if (literal->TokenLiteral() != "5") {
-        std::cerr << "TestNumericalLiteralExpression failed: literal.TokenLiteral not '5'. got=" << literal->TokenLiteral() << std::endl;
+        std::cerr << "TestIntegerLiteralExpression failed: literal.TokenLiteral not '5'. got=" << literal->TokenLiteral() << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
-    std::cout << "TestNumericalLiteralExpression passed." << std::endl;
+    std::cout << "TestIntegerLiteralExpression passed." << std::endl;
 }
 
-bool testNumericalLiteral(const std::unique_ptr<Expression>& nl, int64_t value) {
-    auto integ = dynamic_cast<NumericalLiteral*>(nl.get());
+bool testIntegerLiteral(const std::unique_ptr<Expression>& nl, int64_t value) {
+    auto integ = dynamic_cast<IntegerLiteral*>(nl.get());
     if (!integ) {
         std::cerr << "nl not ast::IntegerLiteral." << std::endl;
         return false;
@@ -342,7 +342,7 @@ void TestParsingPrefixExpressions() {
             std::cerr << "exp.Operator is not '" << tt.op << "'. got=" << exp->Operator << std::endl;
             std::exit(EXIT_FAILURE);
         }
-        if (!testNumericalLiteral(exp->Right, tt.integerValue)) {
+        if (!testIntegerLiteral(exp->Right, tt.integerValue)) {
             std::exit(EXIT_FAILURE);
         }
     }
@@ -410,13 +410,13 @@ void TestParsingInfixExpressions() {
             continue;
         }
 
-        /*if (!testNumericalLiteral(exp->Left, tt.leftValue)) {
+        /*if (!testIntegerLiteral(exp->Left, tt.leftValue)) {
             continue; 
         }
 
         
 
-        if (!testNumericalLiteral(exp->Right, tt.rightValue)) {
+        if (!testIntegerLiteral(exp->Right, tt.rightValue)) {
             continue; 
         }*/
     }
@@ -841,7 +841,7 @@ bool testIdentifier(const std::unique_ptr<Expression>& exp, const std::string& v
 
 bool testLiteralExpression(const std::unique_ptr<Expression>& exp, const LiteralTypeValues& expected) {
     if (std::holds_alternative<int64_t>(expected)) {
-        return testNumericalLiteral(exp, std::get<int64_t>(expected));
+        return testIntegerLiteral(exp, std::get<int64_t>(expected));
     }
     else if (std::holds_alternative<std::string>(expected)) {
         return testIdentifier(exp, std::get<std::string>(expected));

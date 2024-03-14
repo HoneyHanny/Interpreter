@@ -189,15 +189,15 @@ public:
 };
 
 // Subtree structure: <EXPRESSION>
-class NumericalLiteral : public Expression {
+class IntegerLiteral : public Expression {
 public:
     Token token; 
     int Value = 0; //  Default value = 0;
 
-    NumericalLiteral(const Token& token)
+    IntegerLiteral(const Token& token)
         : token(token) {}
 
-    NumericalLiteral(const Token& token, const int value)
+    IntegerLiteral(const Token& token, const int value)
         : token(token), Value(value) {}
 
     std::string String() const override { return token.Literal; }
@@ -206,7 +206,7 @@ public:
     std::string TokenLiteral() const override { return token.Literal; }
 
     std::unique_ptr<Expression> clone() const override {
-        return std::make_unique<NumericalLiteral>(token, Value);
+        return std::make_unique<IntegerLiteral>(token, Value);
     }
 };
 
@@ -226,6 +226,24 @@ public:
 
     std::unique_ptr<Expression> clone() const override {
         return std::make_unique<StringLiteral>(token, Value);
+    }
+};
+
+class FloatLiteral : public Expression {
+public:
+    Token token;
+    double Value = 0.0;
+
+    FloatLiteral(const Token& token, double value)
+        : token(token), Value(value) {}
+
+    std::string String() const override { return token.Literal; }
+
+    void expressionNode() override {}
+    std::string TokenLiteral() const override { return token.Literal; }
+
+    std::unique_ptr<Expression> clone() const override {
+        return std::make_unique<FloatLiteral>(token, Value);
     }
 };
 

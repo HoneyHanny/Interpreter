@@ -16,6 +16,7 @@ using ObjectType = std::string;
 
 enum class ObjectType_ {
     INTEGER_OBJ,
+    FLOAT_OBJ,
     BOOLEAN_OBJ,
     NULL_OBJ,
     RETURN_VALUE_OBJ,
@@ -39,6 +40,7 @@ public:
 inline std::string ObjectTypeToString(ObjectType_ type) {
     switch (type) {
         case ObjectType_::INTEGER_OBJ: return "INTEGER";
+        case ObjectType_::FLOAT_OBJ: return "FLOAT";
         case ObjectType_::BOOLEAN_OBJ: return "BOOLEAN";
         case ObjectType_::NULL_OBJ: return "NULL";
         case ObjectType_::RETURN_VALUE_OBJ: return "RETURN";
@@ -69,6 +71,26 @@ public:
     //    return std::make_unique<IntegerObject>(Value);
     //}
 };
+
+class FloatObject : public Object {
+public:
+    double Value;
+
+    FloatObject(double value) : Value(value) {}
+
+    ObjectType Type() const override {
+        return ObjectTypeToString(ObjectType_::FLOAT_OBJ);
+    }
+
+    std::string Inspect() const override {
+        return std::to_string(Value);
+    }
+
+    // std::shared_ptr<Object> clone() const override {
+    //     return std::make_shared<FloatObject>(Value);
+    // }
+};
+
 
 class BooleanObject : public Object {
 public:

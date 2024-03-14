@@ -24,7 +24,7 @@ void ExecuteTestCases() {
     //TestTypedDeclStatementsV2_1();
     //TestReturnStatements();
     //TestIdentifierExpression();
-    //TestNumericalLiteralExpression();
+    //TestIntegerLiteralExpression();
     //TestParsingPrefixExpressions();
     //TestParsingInfixExpressions();
     //TestOperatorPrecedenceParsing();
@@ -50,11 +50,12 @@ void ExecuteTestCases() {
     //TestReturnStatementsV2();
     //TestErrorHandling();
     //TestTypedDeclStatementsV2();
+    TestTypedDeclStatementsV3();
     //TestFunctionObject();
     //TestFunctionApplication();
     //TestClosures();
     //TestStringLiteral();
     //TestStringConcatenation();
-    TestCharLiteral();
+    //TestCharLiteral();
     //TestBuiltinFunctions();
 }

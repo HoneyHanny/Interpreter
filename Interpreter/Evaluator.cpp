@@ -224,6 +224,50 @@ static std::shared_ptr<Object> evalIntegerInfixExpression(
     return newError("unknown operator: ", left->Type(), operator_, right->Type());  
 }
 
+static std::shared_ptr<Object> evalFloatInfixExpression(
+    const std::string& operator_,
+    std::shared_ptr<Object> left,
+    std::shared_ptr<Object> right) {
+
+    auto leftVal = (left->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ)) ?
+        static_cast<float>(dynamic_cast<IntegerObject*>(left.get())->Value) :
+        dynamic_cast<FloatObject*>(left.get())->Value;
+
+    auto rightVal = (right->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ)) ?
+        static_cast<float>(dynamic_cast<IntegerObject*>(right.get())->Value) :
+        dynamic_cast<FloatObject*>(right.get())->Value;
+
+
+    if (operator_ == "+") {
+        return std::make_shared<FloatObject>(leftVal + rightVal);
+    }
+    else if (operator_ == "-") {
+        return std::make_shared<FloatObject>(leftVal - rightVal);
+    }
+    else if (operator_ == "*") {
+        return std::make_shared<FloatObject>(leftVal * rightVal);
+    }
+    else if (operator_ == "/") {
+        if (rightVal == 0) {
+            return std::make_shared<ErrorObject>("Division by zero");
+        }
+        return std::make_shared<FloatObject>(leftVal / rightVal);
+    }
+    else if (operator_ == "<") {
+        return std::make_shared<BooleanObject>(leftVal < rightVal);
+    }
+    else if (operator_ == ">") {
+        return std::make_shared<BooleanObject>(leftVal > rightVal);
+    }
+    else if (operator_ == "==") {
+        return std::make_shared<BooleanObject>(leftVal == rightVal);
+    }
+    else if (operator_ == "<>") {
+        return std::make_shared<BooleanObject>(leftVal != rightVal);
+    }
+    return std::make_shared<ErrorObject>("unknown operator: " + left->Type() + " " + operator_ + " " + right->Type());
+}
+
 static std::shared_ptr<Object> evalStringInfixExpression(
     const std::string& operator_,
     std::shared_ptr<Object> left,
@@ -247,6 +291,14 @@ static std::shared_ptr<Object> evalInfixExpression(
     if (left->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ) && 
         right->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ)) {
         return evalIntegerInfixExpression(operator_, std::move(left), std::move(right));
+    }
+    if ((left->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ) &&
+        right->Type() == ObjectTypeToString(ObjectType_::FLOAT_OBJ)) ||
+        (left->Type() == ObjectTypeToString(ObjectType_::FLOAT_OBJ) &&
+            right->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ)) ||
+        (left->Type() == ObjectTypeToString(ObjectType_::FLOAT_OBJ) &&
+            right->Type() == ObjectTypeToString(ObjectType_::FLOAT_OBJ))) {
+        return evalFloatInfixExpression(operator_, std::move(left), std::move(right));
     }
     else if (left->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ) &&
         right->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ)) {
@@ -399,8 +451,11 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
             return Eval(exprStmtNode->Expression_.get(), env);
         }
     } 
-    else if (auto numLit = dynamic_cast<const NumericalLiteral*>(node)) {
-        return std::make_unique<IntegerObject>(numLit->Value);
+    else if (auto intLit = dynamic_cast<const IntegerLiteral*>(node)) {
+        return std::make_unique<IntegerObject>(intLit->Value);
+    }
+    else if (auto floatLit = dynamic_cast<const FloatLiteral*>(node)) {
+        return std::make_unique<FloatObject>(floatLit->Value);
     }
     else if (auto bl = dynamic_cast<const Boolean*>(node)) {
         return std::make_unique<BooleanObject>(bl->Value);

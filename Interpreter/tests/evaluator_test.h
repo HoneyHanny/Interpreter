@@ -20,6 +20,7 @@ void TestIfElseExpressions();
 void TestReturnStatementsV2();
 void TestErrorHandling();
 void TestTypedDeclStatementsV2();
+void TestTypedDeclStatementsV3();
 void TestFunctionObject();
 void TestFunctionApplication();
 void TestClosures();

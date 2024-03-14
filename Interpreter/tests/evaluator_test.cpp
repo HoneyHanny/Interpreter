@@ -368,6 +368,58 @@ void TestTypedDeclStatementsV2() {
     }
 }
 
+static bool testFloatObject(const std::shared_ptr<Object>& obj, double expected) {
+    auto result = dynamic_cast<FloatObject*>(obj.get());
+    if (!result) {
+        std::cerr << "object is not Float. got=" << typeid(*obj).name() << std::endl;
+        return false;
+    }
+
+    if (result->Value != expected) {
+        std::cerr << "object has wrong value. got=" << result->Value << ", want=" << expected << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+void TestTypedDeclStatementsV3() {
+    struct TestCase {
+        std::string input;
+        double expected;
+    };
+
+    std::vector<TestCase> tests = {
+        {R"(FLOAT a = 5.5
+            a)", 5.5},
+        {R"(FLOAT a = 5 * 2.2
+            a)", 11.0},
+        {R"(FLOAT a = 5.5 * 2
+            a)", 11.0},
+        {R"(FLOAT a = 5.0
+            FLOAT b = a
+            b)", 5.0},
+        {R"(FLOAT a = 5.0
+            FLOAT b = a
+            FLOAT c = a + b + 5.5 
+            c)", 15.5},
+        {R"(FLOAT a
+            a = 5.5
+            a)", 5.5},
+    };
+
+    for (const auto& test : tests) {
+        auto evaluated = testEval(test.input);
+        if (!testFloatObject(evaluated, test.expected)) {
+            std::cerr << "Test failed for input: " << test.input << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
+        else {
+            std::cout << "Test passed for input: " << test.input << std::endl;
+        }
+    }
+}
+
 void TestFunctionObject() {
     std::string input = R"(FUNCTION foo(INT x) INT: 
                             BEGIN FUNCTION
