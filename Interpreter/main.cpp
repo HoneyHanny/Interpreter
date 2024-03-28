@@ -2,8 +2,12 @@
 #include "Tests.h"
 #include "Repl.h"
 #include <string.h>
-#include <string>
+#include <fstream>
+#include <sstream>
 #include <vector>
+#include <string>
+#include <cstring>
+#include <memory>
 
 static void displayHelp() {
     // TODO(hans): Print more help
@@ -36,11 +40,25 @@ static void displayVerbose() {
     }
 }
 
+std::string readFile(const std::string& filePath) {
+    std::ifstream fileStream(filePath);
+    if (!fileStream.is_open()) {
+        std::cerr << "Could not open file: " << filePath << std::endl;
+        return "";
+    }
+
+    std::stringstream buffer;
+    buffer << fileStream.rdbuf();
+    fileStream.close();
+    return buffer.str();
+}
+
+
 int main(int argc, char* argv[]) {
 
     std::vector<std::string> files;
 
-    ExecuteTestCases(); // Comment out in actual
+    //ExecuteTestCases(); // Comment out in actual
 
     // Process command arguments
     for (int i = 1; i < argc; i++) {
@@ -70,8 +88,17 @@ int main(int argc, char* argv[]) {
         Repl repl;
         repl.Start(std::cin, std::cout);
     } else { // Input files specified interpret source code
-        // TODO(hans): Read and process file
-        std::cerr << "File input not implemented" << std::endl;
+        std::string fileContent = readFile(files[0]);
+        if (!fileContent.empty()) {
+            //std::cout << "File content:\n" << fileContent << std::endl;
+            auto lexer = std::make_unique<Lexer>(fileContent);
+            Parser parser(std::move(lexer));
+
+            auto program = parser.ParseProgram();
+            auto env = std::make_shared<Environment>();
+
+            Eval(program.get(), env);
+        }
     }
 
     return 0;
