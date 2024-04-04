@@ -18,7 +18,15 @@ enum class Precedence : int {
     CALL         // myFunction: x, ...
 };
 
+enum class ParseState {
+    BeginCode,
+    FunctionDeclarations,
+    VariableDeclarations,
+    ExecutableCode,
+    EndCode
+};
 
+static ParseState mainstate = ParseState::BeginCode;
 
 using prefixParseFn = std::function<std::unique_ptr<Expression>()>;
 using infixParseFn = std::function<std::unique_ptr<Expression>(std::unique_ptr<Expression>)>;
@@ -34,11 +42,14 @@ public:
         setupInfixParseFns();
     }
     
+    bool enforcedStructure = true;
+
     Token currentParsedType = {"", ""};
     std::unique_ptr<Expression> currentParsedCallName = nullptr;
 
     std::unique_ptr<Program> ParseProgram();
     std::unique_ptr<Statement> parseStatement();
+    std::unique_ptr<MarkerStatement> parseMarkerStatement(Token type, Token codeToken);
     std::unique_ptr<TypedDeclStatement> parseTypedDeclStatement();
     std::unique_ptr<ReturnStatement> parseReturnStatement();
     std::unique_ptr<ExpressionStatement> parseExpressionStatement();
@@ -147,7 +158,6 @@ private:
         }); 
 
         registerPrefix(FUNCTION, [this]() -> std::unique_ptr<Expression> {
-            std::cout << "calling function stmt parser" << std::endl;
             currentParsedType = {FUNCTION, "FUNCTION"};
             auto stmt = std::make_unique<ExpressionStatement>(curToken);
             Token fnToken = curToken;
@@ -166,8 +176,6 @@ private:
                 //stmt->name = std::move(callName);
                 return parseExpression(Precedence::LOWEST);
             }
-            std::cout << "returned function" << std::endl;
-            std::cout << "Call name: " << currentParsedCallName->String() << std::endl;
 
             auto fnexp = parseFunctionLiteral(fnToken, std::move(currentParsedCallName));
             return fnexp;
@@ -229,3 +237,40 @@ private:
     }
 
 };
+
+static std::unique_ptr<Expression> extractExpression(const std::unique_ptr<Statement>& stmt) {
+    // Utility function to extract an Expression from a Statement if possible.
+    const auto exprStmt = dynamic_cast<ExpressionStatement*>(stmt.get());
+    return exprStmt ? exprStmt->Expression_->clone() : nullptr;
+}
+
+static bool isBeginCodeStatement(const std::unique_ptr<Statement>& stmt) {
+    auto markerStmt = dynamic_cast<MarkerStatement*>(stmt.get());
+    return markerStmt && markerStmt->token.Literal + " " + markerStmt->codeToken.Literal == "BEGIN CODE";
+}
+
+static bool isEndCodeStatement(const std::unique_ptr<Statement>& stmt) {
+    auto markerStmt = dynamic_cast<MarkerStatement*>(stmt.get());
+    return markerStmt && markerStmt->token.Literal + " " + markerStmt->codeToken.Literal == "END CODE";
+}
+
+static bool isTransitionToVariableDeclarations(const std::unique_ptr<Statement>& stmt) {
+    if (auto typedDeclStmt = dynamic_cast<TypedDeclStatement*>(stmt.get())) {
+        return true;
+    }
+
+    return false;
+}
+
+static bool isTransitionToExecutableCode(const std::unique_ptr<Statement>& stmt) {
+    auto expr = extractExpression(stmt);
+    if (expr) {
+        return true;
+    }
+
+    return false;
+}
+
+static bool isAllowedInEndCode(const std::unique_ptr<Statement>& stmt) {
+    return false;
+}

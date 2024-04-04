@@ -549,7 +549,7 @@ public:
     std::string String() const override {
         std::ostringstream out;
 
-        out << name->String() << " ";
+        out << name->String() << " = ";
 
         if (Expression_ != nullptr) {
             out << Expression_->String();
@@ -570,5 +570,28 @@ public:
         auto clonedExpr = std::make_unique<AssignExpression>(std::move(clonedName));
         clonedExpr->Expression_ = std::move(clonedExpression);
         return clonedExpr;
+    }
+};
+
+class MarkerStatement : public Statement {
+public:
+    Token token;
+    Token codeToken;
+
+    MarkerStatement(Token token, Token codeToken) : token(token), codeToken(codeToken) {}
+
+    std::string String() const override {
+        std::ostringstream out;
+
+        out << token.Literal << " " << codeToken.Literal;
+
+        return out.str();
+    }
+
+    void statementNode() override {}
+    std::string TokenLiteral() const override { return token.Literal; }
+
+    std::unique_ptr<Statement> clone() const override {
+        return std::make_unique<MarkerStatement>(token, codeToken);
     }
 };

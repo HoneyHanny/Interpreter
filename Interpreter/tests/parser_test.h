@@ -27,6 +27,7 @@ void TestFunctionParameterParsing();
 void TestCallExpressionParsing();
 void TestStringLiteralExpression();
 void TestCharLiteralExpression();
+void TestASTStructure();
 
 bool testIdentifier(const std::unique_ptr<Expression>& exp, const std::string& value);
 bool testLiteralExpression(const std::unique_ptr<Expression>& exp, const LiteralTypeValues& expected);

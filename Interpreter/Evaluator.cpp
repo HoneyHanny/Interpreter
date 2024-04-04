@@ -21,17 +21,17 @@ std::unordered_map<std::string, std::shared_ptr<Builtin>> builtins = {
             }
             // Return 1 for success code
             if (auto str = std::dynamic_pointer_cast<String>(args[0])) {
-                std::cout << "Display: " << str->Value << std::endl;
+                std::cout << str->Value << std::endl;
                 return std::make_shared<IntegerObject>(1);  
                 //return str;
             }
             if (auto num = std::dynamic_pointer_cast<IntegerObject>(args[0])) {
-                std::cout << "Display: " << num->Value << std::endl;
+                std::cout << num->Value << std::endl;
                 return std::make_shared<IntegerObject>(1);
                 //return num;
             }
             if (auto bl = std::dynamic_pointer_cast<BooleanObject>(args[0])) {
-                std::cout << "Display: " << bl->Value << std::endl;
+                std::cout << bl->Value << std::endl;
                 return std::make_shared<IntegerObject>(1);
                 //return num;
             }
@@ -46,18 +46,18 @@ std::unordered_map<std::string, std::shared_ptr<Builtin>> builtins = {
             for (const auto& arg : args) {
                 //std::cout << "SCAN INSPECT: " << arg->Inspect() << std::endl;
                 std::string varName = env->GetNameByObject(arg);
-                std::cout << "SCAN INSPECT: " << varName << std::endl;
-                std::cout << "SCAN INSPECT: " << env->GetType(varName).Type << std::endl;
+                //std::cout << "SCAN INSPECT: " << varName << std::endl;
+                //std::cout << "SCAN INSPECT: " << env->GetType(varName).Type << std::endl;
 
                 auto varType = env->GetType(varName);
-                std::cout << "Got " << varType.Type << " type." << std::endl;
+                //std::cout << "Got " << varType.Type << " type." << std::endl;
 
                 if (varType.Type != INT && varType.Type != BOOL && varType.Type != STRING) {
                     return std::make_shared<ErrorObject>("Unsupported type for SCAN: " + varType.Literal);
                 }
 
                 std::string input;
-                std::cout << "Enter input for " << varName << ": ";
+                //std::cout << "Enter input for " << varName << ": ";
                 std::getline(std::cin, input);
 
                 

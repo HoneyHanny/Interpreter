@@ -22,8 +22,15 @@ std::unique_ptr<Program> Parser::ParseProgram() {
     return program;
 }
 
+
 std::unique_ptr<Statement> Parser::parseStatement() {
     Tracer tracer("parseStatement");
+
+    if (enforcedStructure) {
+        if ((curToken.Type == BEGIN || curToken.Type == END) && peekToken.Type == CODE) {
+            return parseMarkerStatement(curToken, peekToken);
+        }
+    }
 
     // Typed Declaration Statements
     if (curToken.Type == INT 
@@ -44,6 +51,7 @@ std::unique_ptr<Statement> Parser::parseStatement() {
     else if (curToken.Type == RETURN) {
         return parseReturnStatement();
     }
+
     //else if (curToken.Type == FUNCTION) {
     //    auto stmt = std::make_unique<ExpressionStatement>(curToken);
     //    auto fnToken = curToken;
@@ -74,11 +82,21 @@ std::unique_ptr<Statement> Parser::parseStatement() {
 
     //    return stmt;
     //}
+
     // Expression Statements
     else if (curToken.Type != NEWLINE){
         return parseExpressionStatement();
     }
     return nullptr;
+}
+
+std::unique_ptr<MarkerStatement> Parser::parseMarkerStatement(Token type, Token codeToken) {
+    auto stmt = std::make_unique<MarkerStatement>(type, codeToken);
+
+    nextToken();
+    nextToken();
+
+    return stmt;
 }
 
 // Subtree structure: <TYPE> <IDENT> <ASSIGN> <EXPRESSION>
@@ -142,11 +160,9 @@ std::unique_ptr<ExpressionStatement> Parser::parseExpressionStatement() {
     stmt->Expression_ = parseExpression(Precedence::LOWEST);
 
     if (currentParsedType.Type == FUNCTION) {
-        std::cout << "Creating a function!  - currentParsedType: " << currentParsedType.Type << std::endl;
         stmt->token = currentParsedType;
 
         if (currentParsedCallName) {
-            std::cout << "Cloning into exprstmt " << stmt->token.Type << " name: " << currentParsedCallName->String() << std::endl;
             stmt->name = currentParsedCallName->clone();
         }
     }

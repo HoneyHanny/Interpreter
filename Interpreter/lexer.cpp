@@ -131,7 +131,10 @@ Token Lexer::NextToken() {
         };
         break;
     case '$':
-        tok = { DOLLAR_SIGN, std::string(1, ch) };
+        tok = {
+            CHAR_LITERAL,
+            "\n",
+        };
         break;
     case '&':
         tok = { AMPERSAND, std::string(1, ch) };

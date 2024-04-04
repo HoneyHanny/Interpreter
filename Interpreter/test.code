@@ -1,3 +1,16 @@
-DISPLAY: "Hello, World"
-DISPLAY: "Bye, World"
-DISPLAY: "Hello again, World"
+BEGIN CODE
+    FUNCTION add(INT x, INT y) INT: 
+    BEGIN FUNCTION
+        RETURN x + y
+    END FUNCTION
+
+    INT x = 2
+    INT y = 4
+    CHAR c = 'c'
+    # SCAN: x, y
+
+    DISPLAY: c
+
+    x = add: x, y
+    DISPLAY: x
+END CODE
