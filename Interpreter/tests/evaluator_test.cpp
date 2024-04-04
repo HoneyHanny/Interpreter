@@ -528,7 +528,7 @@ void TestClosures() {
     std::string input = R"(
     FUNCTION inner(INT x) FUNCTION:
     BEGIN FUNCTION
-        FUNCTION ret(INT y) INT:
+        RETURN FUNCTION ret(INT y) INT:
         BEGIN FUNCTION
             RETURN x + y
         END FUNCTION

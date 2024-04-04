@@ -1181,6 +1181,24 @@ ParseState state = ParseState::BeginCode;
 //}
 
 void TestASTStructure() {
+//    std::string input = R"(
+//    BEGIN CODE
+//        FUNCTION add(INT x, INT y) INT: 
+//        BEGIN FUNCTION
+//            RETURN x + y
+//        END FUNCTION
+//
+//        INT x = 5
+//        CHAR a_1 = 'n'
+//        BOOL t = TRUE
+//        STRING st = "foobar"
+//
+//        a_1 = 'c' 
+//
+//    
+//        DISPLAY: x & t & z & a_1 & [#] & "last"
+//    END CODE
+//)";
     std::string input = R"(
     BEGIN CODE
         FUNCTION add(INT x, INT y) INT: 
@@ -1188,18 +1206,30 @@ void TestASTStructure() {
             RETURN x + y
         END FUNCTION
 
-        INT x = 5
-        CHAR a_1 = 'n'
-        BOOL t = TRUE
-        STRING st = "foobar"
+        FUNCTION inner(INT x) FUNCTION:
+        BEGIN FUNCTION
+            RETURN FUNCTION ret(INT y) INT:
+            BEGIN FUNCTION
+                RETURN x + y
+            END FUNCTION
+        END FUNCTION
+   
+        INT x = 2
+        INT y = 4
+        CHAR c = 'c'
+        BOOL b = "TRUE"
 
-        a_1 = 'c' 
+        FUNCTION outer = inner: 2
+        INT res = outer: 2
 
-    
-        DISPLAY: x & t & z & a_1 & [#] & "last"
+        DISPLAY: c & $ & 'a' & $ & "hello world" & $
+        DISPLAY: TRUE & FALSE & b
+
+        x = add: x, y
+        DISPLAY: x
+        # DISPLAY: res
     END CODE
 )";
-
     auto lexer = std::make_unique<Lexer>(input);
     Parser parser(std::move(lexer));
 
@@ -1235,25 +1265,39 @@ void TestASTStructure() {
             else if (isTransitionToExecutableCode(stmt)) {
                 state = ParseState::ExecutableCode;
             }
+            else if (isEndCodeStatement(stmt)) {
+                state = ParseState::EndCode;
+            }
             else {
                 std::cerr << "Error: Unexpected statement type in Function Declarations state." << std::endl;
-                return;
+                //return;
             }
         }
 
         else if (state == ParseState::VariableDeclarations) {
+            bool transitionFlag = false;
+            if (auto exprstmt = dynamic_cast<ExpressionStatement*>(stmt.get())) {
+                //std::cout << exprstmt->TokenLiteral() << std::endl;
+                if (exprstmt->TokenLiteral() == "FUNCTION") {
+                    transitionFlag = true;
+                }
+            }
             if (auto typedDeclStmt = dynamic_cast<TypedDeclStatement*>(stmt.get())) {
                 std::cout << "Variable Declaration." << std::endl;
             }
             else if (isTransitionToExecutableCode(stmt)) {
-                state = ParseState::ExecutableCode;
+                if (!transitionFlag) {
+                    state = ParseState::ExecutableCode;
+                }
+            }
+            else if (isEndCodeStatement(stmt)) {
+                state = ParseState::EndCode;
             }
             else {
                 std::cerr << "Error: Unexpected statement type in Variable Declarations state." << std::endl;
                 return;
             }
         }
-
         else if (state == ParseState::ExecutableCode) {
             auto expr = extractExpression(stmt);
             const auto fnlit = dynamic_cast<FunctionLiteral*>(expr.get());

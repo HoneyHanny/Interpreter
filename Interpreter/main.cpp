@@ -129,11 +129,20 @@ int main(int argc, char* argv[]) {
                 }
 
                 else if (mainstate == ParseState::VariableDeclarations) {
+                    bool transitionFlag = false;
+                    if (auto exprstmt = dynamic_cast<ExpressionStatement*>(stmt.get())) {
+                        //std::cout << exprstmt->TokenLiteral() << std::endl;
+                        if (exprstmt->TokenLiteral() == "FUNCTION") {
+                            transitionFlag = true;
+                        }
+                    }
                     if (auto typedDeclStmt = dynamic_cast<TypedDeclStatement*>(stmt.get())) {
                         // Pass
                     }
                     else if (isTransitionToExecutableCode(stmt)) {
-                        mainstate = ParseState::ExecutableCode;
+                        if (!transitionFlag) {
+                            mainstate = ParseState::ExecutableCode;
+                        }
                     }
                     else if (isEndCodeStatement(stmt)) {
                         mainstate = ParseState::EndCode;
@@ -152,12 +161,12 @@ int main(int argc, char* argv[]) {
                         std::exit(EXIT_FAILURE);
                     }
 
-                    if (auto typedDeclStmt = dynamic_cast<TypedDeclStatement*>(stmt.get())) {
+                    else if (auto typedDeclStmt = dynamic_cast<TypedDeclStatement*>(stmt.get())) {
                         std::cerr << "Error: Unexpected variable declaration in Executable Code state." << std::endl;
                         std::exit(EXIT_FAILURE);
                     }
 
-                    if (isEndCodeStatement(stmt)) {
+                    else if (isEndCodeStatement(stmt)) {
                         mainstate = ParseState::EndCode;
                     }
 

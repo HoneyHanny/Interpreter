@@ -256,15 +256,16 @@ static bool isEndCodeStatement(const std::unique_ptr<Statement>& stmt) {
 
 static bool isTransitionToVariableDeclarations(const std::unique_ptr<Statement>& stmt) {
     if (auto typedDeclStmt = dynamic_cast<TypedDeclStatement*>(stmt.get())) {
+        //std::cout << "Transition to var decl state" << std::endl;
         return true;
     }
-
     return false;
 }
 
 static bool isTransitionToExecutableCode(const std::unique_ptr<Statement>& stmt) {
     auto expr = extractExpression(stmt);
     if (expr) {
+        //std::cout << "Transition to exec state" << std::endl;
         return true;
     }
 

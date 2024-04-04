@@ -372,7 +372,7 @@ static std::shared_ptr<Object> evalInfixExpression(
         right->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ)) {
         return evalIntegerInfixExpression(operator_, std::move(left), std::move(right));
     }
-    // Int vs Float
+    // Int | Float vs Float
     if ((left->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ) &&
         right->Type() == ObjectTypeToString(ObjectType_::FLOAT_OBJ)) ||
         (left->Type() == ObjectTypeToString(ObjectType_::FLOAT_OBJ) &&
