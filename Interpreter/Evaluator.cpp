@@ -31,7 +31,13 @@ std::unordered_map<std::string, std::shared_ptr<Builtin>> builtins = {
                 //return num;
             }
             if (auto bl = std::dynamic_pointer_cast<BooleanObject>(args[0])) {
-                std::cout << bl->Value << std::endl;
+                std::string display = bl->Value ? "TRUE" : "FALSE";
+                std::cout << display << std::endl;
+                return std::make_shared<IntegerObject>(1);
+                //return num;
+            }
+            if (auto c = std::dynamic_pointer_cast<Char>(args[0])) {
+                std::cout << c->Value << std::endl;
                 return std::make_shared<IntegerObject>(1);
                 //return num;
             }
@@ -52,7 +58,7 @@ std::unordered_map<std::string, std::shared_ptr<Builtin>> builtins = {
                 auto varType = env->GetType(varName);
                 //std::cout << "Got " << varType.Type << " type." << std::endl;
 
-                if (varType.Type != INT && varType.Type != BOOL && varType.Type != STRING) {
+                if (varType.Type != INT && varType.Type != BOOL && varType.Type != STRING && varType.Type != CHAR) {
                     return std::make_shared<ErrorObject>("Unsupported type for SCAN: " + varType.Literal);
                 }
 
@@ -80,7 +86,13 @@ std::unordered_map<std::string, std::shared_ptr<Builtin>> builtins = {
                     bool value = (input == "TRUE" || input == "1");
                     env->Set(varName, varType, std::make_shared<BooleanObject>(value));
                 }
-
+                else if (varType.Type == CHAR) {
+                    if (input.length() != 1) {
+                        return std::make_shared<ErrorObject>("Invalid input size for CHAR type. Expected a single character.");
+                    }
+                    char value = input.front();
+                    env->Set(varName, varType, std::make_shared<Char>(value));
+                }
             }
             // Return 1 for success code
             return std::make_shared<IntegerObject>(1);
@@ -273,13 +285,81 @@ static std::shared_ptr<Object> evalStringInfixExpression(
     std::shared_ptr<Object> left,
     std::shared_ptr<Object> right) {
 
-    auto leftVal = dynamic_cast<String*>(left.get())->Value;
-    auto rightVal = dynamic_cast<String*>(right.get())->Value;
+    std::string leftVal;
+    if (left->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ)) {
+        leftVal = dynamic_cast<String*>(left.get())->Value;
+    }
+    else if (left->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ)) {
+        leftVal = std::string(1, dynamic_cast<Char*>(left.get())->Value);
+    }
+    else {
+        return std::make_shared<ErrorObject>("left-hand operand of & must be a string or char, got " + left->Type());
+    }
+
+    std::string rightVal;
+    if (right->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ)) {
+        rightVal = dynamic_cast<String*>(right.get())->Value;
+    }
+    else if (right->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ)) {
+        rightVal = std::string(1, dynamic_cast<Char*>(right.get())->Value);
+    }
+    else {
+        return std::make_shared<ErrorObject>("right-hand operand of & must be a string or char, got " + right->Type());
+    }
 
     if (operator_ == "&") {
-        return std::make_unique<String>(leftVal + rightVal);
+        return std::make_shared<String>(leftVal + rightVal);
     }
-    return newError("unknown operator: ", left->Type(), operator_, right->Type());
+    return std::make_shared<ErrorObject>("unknown operator: " + operator_ + " for types " + left->Type() + " and " + right->Type());
+}
+
+std::string getObjectStringValue(std::shared_ptr<Object> obj) {
+    if (obj->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ)) {
+        return std::to_string(dynamic_cast<IntegerObject*>(obj.get())->Value);
+    }
+    else if (obj->Type() == ObjectTypeToString(ObjectType_::FLOAT_OBJ)) {
+        return std::to_string(dynamic_cast<FloatObject*>(obj.get())->Value);
+    }
+    else if (obj->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ)) {
+        return dynamic_cast<String*>(obj.get())->Value;
+    }
+    else if (obj->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ)) {
+        return std::string(1, dynamic_cast<Char*>(obj.get())->Value);
+    }
+    return "";
+}
+
+static std::shared_ptr<Object> evalBoolInfixExpression(
+    const std::string& operator_,
+    std::shared_ptr<Object> left,
+    std::shared_ptr<Object> right) {
+
+    std::string leftVal;
+    if (left->Type() == ObjectTypeToString(ObjectType_::BOOLEAN_OBJ)) {
+        leftVal = dynamic_cast<BooleanObject*>(left.get())->Value ? "TRUE" : "FALSE";
+    }
+    else {
+        leftVal = getObjectStringValue(left);
+        if (leftVal.empty()) {
+            return std::make_shared<ErrorObject>("left-hand operand of & must be boolean, integer, float, string, or char, got " + left->Type());
+        }
+    }
+
+    std::string rightVal;
+    if (right->Type() == ObjectTypeToString(ObjectType_::BOOLEAN_OBJ)) {
+        rightVal = dynamic_cast<BooleanObject*>(right.get())->Value ? "TRUE" : "FALSE";
+    }
+    else {
+        rightVal = getObjectStringValue(right);
+        if (rightVal.empty()) {
+            return std::make_shared<ErrorObject>("right-hand operand of & must be boolean, integer, float, string, or char, got " + right->Type());
+        }
+    }
+
+    if (operator_ == "&") {
+        return std::make_shared<String>(leftVal + rightVal);
+    }
+    return std::make_shared<ErrorObject>("unknown operator: " + operator_ + " for types " + left->Type() + " and " + right->Type());
 }
 
 static std::shared_ptr<Object> evalInfixExpression(
@@ -292,6 +372,7 @@ static std::shared_ptr<Object> evalInfixExpression(
         right->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ)) {
         return evalIntegerInfixExpression(operator_, std::move(left), std::move(right));
     }
+    // Int vs Float
     if ((left->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ) &&
         right->Type() == ObjectTypeToString(ObjectType_::FLOAT_OBJ)) ||
         (left->Type() == ObjectTypeToString(ObjectType_::FLOAT_OBJ) &&
@@ -300,9 +381,33 @@ static std::shared_ptr<Object> evalInfixExpression(
             right->Type() == ObjectTypeToString(ObjectType_::FLOAT_OBJ))) {
         return evalFloatInfixExpression(operator_, std::move(left), std::move(right));
     }
-    else if (left->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ) &&
-        right->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ)) {
+    // String vs String | Char
+    else if (
+        (left->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ) &&
+            (right->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ) ||
+            right->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ))) ||
+        (left->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ) &&
+            (right->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ) ||
+            right->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ)))
+        ) {
         return evalStringInfixExpression(operator_, std::move(left), std::move(right));
+    }
+    // Primitive Type vs Bool
+    else if (
+        (left->Type() == ObjectTypeToString(ObjectType_::BOOLEAN_OBJ) && 
+            right->Type() == ObjectTypeToString(ObjectType_::BOOLEAN_OBJ)) ||
+        (left->Type() == ObjectTypeToString(ObjectType_::BOOLEAN_OBJ) &&
+            (right->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ) ||
+                right->Type() == ObjectTypeToString(ObjectType_::FLOAT_OBJ) ||
+                right->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ) ||
+                right->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ))) ||
+        (right->Type() == ObjectTypeToString(ObjectType_::BOOLEAN_OBJ) &&
+            (left->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ) ||
+                left->Type() == ObjectTypeToString(ObjectType_::FLOAT_OBJ) ||
+                left->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ) ||
+                left->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ)))
+        ) {
+        return evalBoolInfixExpression(operator_, std::move(left), std::move(right));
     }
     else if (operator_ == "==") {
         auto leftVal = dynamic_cast<BooleanObject*>(left.get())->Value;

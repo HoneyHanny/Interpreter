@@ -7,10 +7,9 @@ BEGIN CODE
     INT x = 2
     INT y = 4
     CHAR c = 'c'
-    # SCAN: x, y
 
-    DISPLAY: c
-
-    x = add: x, y
-    DISPLAY: x
+    DISPLAY: c & $ & 'a'
+    DISPLAY: TRUE & TRUE & FALSE
+    # x = add: x, y
+    # DISPLAY: x
 END CODE
