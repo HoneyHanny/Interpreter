@@ -35,6 +35,7 @@ Token Lexer::NextToken() {
 
     skipWhitespace();
 
+    std::string stringResult;
     switch (ch) {
     case '=':
         if (peekChar() == '=') {
@@ -125,10 +126,26 @@ Token Lexer::NextToken() {
         };
         break;
     case '"': 
-        tok = { 
-            STRING_LITERAL, 
-            readString(),
-        };
+        stringResult = readString();
+        if (stringResult == "TRUE") {
+            tok = {
+                TRUE,
+                "TRUE",
+            };
+        }
+        else if (stringResult == "FALSE") {
+            tok = {
+                FALSE,
+                "FALSE",
+            };
+        }
+        else {
+            tok = { 
+                STRING_LITERAL,
+                stringResult,
+                //readString(),
+            };
+        }
         break;
     case '$':
         tok = {

@@ -7,9 +7,11 @@ BEGIN CODE
     INT x = 2
     INT y = 4
     CHAR c = 'c'
+    BOOL b = "TRUE"
 
     DISPLAY: c & $ & 'a'
-    DISPLAY: TRUE & TRUE & FALSE
-    # x = add: x, y
-    # DISPLAY: x
+    DISPLAY: TRUE & FALSE & b
+
+    x = add: x, y
+    DISPLAY: x
 END CODE
