@@ -1,5 +1,7 @@
 #include "Evaluator.h"
 
+int evaluatorCurrentLine = 0;
+
 std::unordered_map<std::string, std::shared_ptr<Builtin>> builtins = {
     {"LEN", std::make_shared<Builtin>(
         [](const std::vector<std::shared_ptr<Object>>& args, std::shared_ptr<Environment> env) -> std::shared_ptr<Object> {
@@ -121,15 +123,15 @@ static void handleArgs(std::ostringstream& os, T&& firstArg, Args&&... args) {
 }
 
 template<typename... Args>
-static void formatMessage(std::ostringstream& message, const std::string& format, Args... args) {
-    message << format << "";
+static void formatMessage(std::ostringstream& message, int line, const std::string& format, Args... args) {
+    message << "Error on line " << line << ": " << format;
     handleArgs(message, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 static std::shared_ptr<ErrorObject> newError(const std::string& format, Args... args) {
     std::ostringstream message;
-    formatMessage(message, format, std::forward<Args>(args)...);
+    formatMessage(message, evaluatorCurrentLine, format, std::forward<Args>(args)...);
     return std::make_unique<ErrorObject>(message.str());
 }
 
@@ -147,7 +149,6 @@ static std::shared_ptr<Object> evalProgram(const std::vector<std::unique_ptr<Sta
         const Node* node = dynamic_cast<const Node*>(statement.get());
         if (node) {
             result = Eval(node, env);
-
             if (auto returnValue = dynamic_cast<ReturnValue*>(result.get())) {
                 return std::shared_ptr<Object>(returnValue->TakeValue());
             }
@@ -180,7 +181,7 @@ static std::shared_ptr<Object> evalMinusPrefixOperatorExpression(std::shared_ptr
     IntegerObject* integerRight = dynamic_cast<IntegerObject*>(right.get());
 
     if (!integerRight) {
-        return newError("unknown operator: -", right->Type());
+        return newError("Unknown operator: -", right->Type());
     }
 
     return std::make_unique<IntegerObject>(-integerRight->Value);
@@ -194,7 +195,7 @@ static std::shared_ptr<Object> evalPrefixExpression(const std::string& operator_
         return evalMinusPrefixOperatorExpression(std::move(right));
     }
     // Default case returns a unique pointer to a new NullObject
-    return newError("unknown operator: ", operator_, right->Type());
+    return newError("Unknown operator: ", operator_, right->Type());
 }
 
 static std::shared_ptr<Object> evalIntegerInfixExpression(
@@ -233,7 +234,7 @@ static std::shared_ptr<Object> evalIntegerInfixExpression(
     else if (operator_ == "<>") {
         return std::make_unique<BooleanObject>(leftVal != rightVal);
     }
-    return newError("unknown operator: ", left->Type(), operator_, right->Type());  
+    return newError("Unknown operator: ", left->Type(), operator_, right->Type());  
 }
 
 static std::shared_ptr<Object> evalFloatInfixExpression(
@@ -420,10 +421,10 @@ static std::shared_ptr<Object> evalInfixExpression(
         return std::make_unique<BooleanObject>(leftVal != rightVal);
     }
     else if (left->Type() != right->Type()) {
-        return newError("type mismatch: ", left->Type(), operator_, right->Type());
+        return newError("Type mismatch: ", left->Type(), operator_, right->Type());
     }
     else {
-        return newError("unknown operator: ", left->Type(), operator_, right->Type());
+        return newError("Unknown operator: ", left->Type(), operator_, right->Type());
     }
 }
 
@@ -449,13 +450,16 @@ static std::shared_ptr<Object> evalIfExpression(const IfExpression* ie, const st
         return condition;
     }
 
+    evaluatorCurrentLine++;
     if (isTruthy(condition)) {
         return Eval(ie->Consequence.get(), env);
     }
     else if (ie->Alternative) {
+        evaluatorCurrentLine++;
         return Eval(ie->Alternative.get(), env);
     }
     else {
+        evaluatorCurrentLine++;
         return std::make_unique<NullObject>();
     }
 }
@@ -464,6 +468,7 @@ static std::shared_ptr<Object> evalBlockStatement(const BlockStatement* block, c
     std::shared_ptr<Object> result = nullptr;
 
     for (const auto& statement : block->Statements) {
+        evaluatorCurrentLine++;
         result = Eval(statement.get(), env);
 
         if (result != nullptr) {
@@ -488,7 +493,7 @@ static std::shared_ptr<Object> evalIdentifier(const Identifier* node, const std:
         return it->second; 
     }
 
-    return newError("identifier not found: " + node->Value);
+    return newError("Identifier not found '" + node->Value + "'");
 }
 
 static std::vector<std::shared_ptr<Object>> evalExpressions(const std::vector<std::unique_ptr<Expression>>& exps, const std::shared_ptr<Environment>& env) {
@@ -544,7 +549,10 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
     if (auto programNode = dynamic_cast<const Program*>(node)) {
         return evalProgram(programNode->Statements, env);
     }
-    else if (auto exprStmtNode = dynamic_cast<const ExpressionStatement*>(node)) {
+    else if (auto markerStmt = dynamic_cast<const MarkerStatement*>(node)) {
+        evaluatorCurrentLine++;
+    }
+    else if (auto exprStmtNode = dynamic_cast<const ExpressionStatement*>(node)) { // Must increment line number
         if (exprStmtNode->token.Type == FUNCTION && exprStmtNode->name) {
             auto val = Eval(exprStmtNode->Expression_.get(), env);
             if (isError(val)) {
@@ -553,6 +561,7 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
             env->Set(exprStmtNode->name->TokenLiteral(), exprStmtNode->token, val);
         }
         else {
+            evaluatorCurrentLine++;
             return Eval(exprStmtNode->Expression_.get(), env);
         }
     } 
@@ -603,6 +612,7 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
         return std::make_unique<ReturnValue>(val);
     }
     else if (const auto* typedDeclStmt = dynamic_cast<const TypedDeclStatement*>(node)) {
+        evaluatorCurrentLine++;
         if (typedDeclStmt->Value) {
             auto val = Eval(typedDeclStmt->Value.get(), env);
             if (isError(val)) {

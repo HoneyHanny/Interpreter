@@ -43,6 +43,7 @@ public:
     }
     
     bool enforcedStructure = true;
+    int currentLine = 1;
 
     Token currentParsedType = {"", ""};
     std::unique_ptr<Expression> currentParsedCallName = nullptr;
@@ -70,7 +71,7 @@ public:
     std::unique_ptr<Expression> parseCallExpression(std::unique_ptr<Expression> function);
     std::vector<std::unique_ptr<Expression>> parseCallArguments();
     std::unique_ptr<Expression> parseAssignExpression(std::unique_ptr<Expression> name);
-
+    
     // Helper functions
 
     bool curTokenIs(const TokenType& t) const;
@@ -80,9 +81,15 @@ public:
     bool peekTokenIs(TokenTypes... types);
 
     bool expectPeek(const TokenType& t);
+    bool customExpectPeek(const std::string& errorMessage, const TokenType& t);
 
     template<typename... TokenTypes>
     bool expectPeek(TokenTypes... types);
+
+    template<typename... TokenTypes>
+    bool customExpectPeek(const std::string& errorMessage, TokenTypes... types);
+
+    void printCurTokenLiteral();
 
     Precedence peekPrecedence() const;
     Precedence curPrecedence() const;
@@ -91,6 +98,7 @@ public:
 
     std::vector<std::string> Errors() const;
     void peekError(const TokenType& expected);
+    void peekError(const std::string& message);
     void noPrefixParseFnError(TokenType t);
 
     // Token <--> Parser functions - mapping
@@ -241,7 +249,13 @@ private:
 static std::unique_ptr<Expression> extractExpression(const std::unique_ptr<Statement>& stmt) {
     // Utility function to extract an Expression from a Statement if possible.
     const auto exprStmt = dynamic_cast<ExpressionStatement*>(stmt.get());
-    return exprStmt ? exprStmt->Expression_->clone() : nullptr;
+    if (exprStmt && exprStmt->Expression_) { // Ensure exprStmt and its Expression_ are not nullptr
+        auto clonedExpr = exprStmt->Expression_->clone();
+        if (clonedExpr) { // Ensure clonedExpr is not nullptr
+            return clonedExpr;
+        }
+    }
+    return nullptr; // Return nullptr if any condition fails
 }
 
 static bool isBeginCodeStatement(const std::unique_ptr<Statement>& stmt) {

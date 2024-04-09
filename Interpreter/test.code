@@ -1,29 +1,4 @@
-BEGIN CODE
-    FUNCTION add(INT x, INT y) INT: 
-    BEGIN FUNCTION
-        RETURN x + y
-    END FUNCTION
-
-    FUNCTION inner(INT x) FUNCTION:
-    BEGIN FUNCTION
-        RETURN FUNCTION ret(INT y) INT:
-        BEGIN FUNCTION
-            RETURN x + y
-        END FUNCTION
-    END FUNCTION
-   
-    INT x = 2
-    INT y = 4
-    CHAR c = 'c'
-    BOOL b = "TRUE"
-
-    FUNCTION outer = inner: 2
-    INT res = outer: 2
-
-    DISPLAY: c & $ & 'a' & $ & "hello world" & $
-    DISPLAY: TRUE & FALSE & b
-
-    x = add: x, y
-    DISPLAY: x
-    DISPLAY: res
+BEGIN CODE 
+	INT _x = 90
+	DISPLAY: x
 END CODE

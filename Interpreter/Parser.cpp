@@ -3,6 +3,8 @@
 
 void Parser::nextToken() {
     curToken = peekToken;
+    if (curToken.Literal == NEWLINE) currentLine++;
+
     peekToken = lexer->NextToken();
 }   
 
@@ -93,8 +95,15 @@ std::unique_ptr<Statement> Parser::parseStatement() {
 std::unique_ptr<MarkerStatement> Parser::parseMarkerStatement(Token type, Token codeToken) {
     auto stmt = std::make_unique<MarkerStatement>(type, codeToken);
 
-    nextToken();
-    nextToken();
+    if (!expectPeek(CODE)) { // Move on to CODE
+        return nullptr;
+    }
+    if (!customExpectPeek("Expected BEGIN CODE statement.", NEWLINE, EOF_TOKEN)) { // Move on to NEWLINE, EOF
+        while (!curTokenIs(NEWLINE) && !curTokenIs(EOF_TOKEN)) { // Ensure that statement after doesn't get processed
+            nextToken();
+        }
+        return nullptr;
+    }
 
     return stmt;
 }
@@ -106,6 +115,7 @@ std::unique_ptr<TypedDeclStatement> Parser::parseTypedDeclStatement() {
     auto stmt = std::make_unique<TypedDeclStatement>(curToken);
 
     if (!expectPeek(IDENT)) {
+        errors.push_back("Invalid variable declaration.");
         return nullptr;
     }
 
@@ -113,6 +123,8 @@ std::unique_ptr<TypedDeclStatement> Parser::parseTypedDeclStatement() {
 
     // Typed statement is either a declaration w/out value or a function parameter:
     // NEWLINE: Statement is a variable declaration (e.g. INT x) 
+    // FUNCTION add(INT x, INT y) INT:
+    // INT x, y, z = 5 (not yet implemented)
     // COMMA and RPAREN: Statement is part of a function arguement
     if (peekTokenIs(COMMA, NEWLINE, RPAREN)) { 
         return stmt;
@@ -122,16 +134,27 @@ std::unique_ptr<TypedDeclStatement> Parser::parseTypedDeclStatement() {
         return stmt;
     }
 
-    nextToken();
-    nextToken();
+    nextToken(); // Assign
+
+    if (!expectPeek(IDENT, NUM, STRING_LITERAL, CHAR_LITERAL, STRING)) {
+        return nullptr;
+    }
+
+    //nextToken();
 
     stmt->Value = parseExpression(Precedence::LOWEST);
 
-    while (!curTokenIs(NEWLINE) && !curTokenIs(EOF_TOKEN)) {
-        nextToken();
+    // If statement not on new line
+    if (!expectPeek(NEWLINE, EOF_TOKEN)) {
+        //errors.push_back("Statement not on new line.");
+        return nullptr;
     }
-
-    return stmt;
+    else {
+        while (!curTokenIs(NEWLINE) && !curTokenIs(EOF_TOKEN)) {
+            nextToken();
+        }
+        return stmt;
+    }
 }
 
 // Subtree structure: <RETURN> <EXPRESSION>
@@ -144,11 +167,17 @@ std::unique_ptr<ReturnStatement> Parser::parseReturnStatement() {
 
     stmt->ReturnValue = parseExpression(Precedence::LOWEST);
 
-    while (!curTokenIs(NEWLINE) && !curTokenIs(EOF_TOKEN)) {
-        nextToken();
+    // If statement not on new line
+    if (!expectPeek(NEWLINE, EOF_TOKEN)) {
+        //errors.push_back("Statement not on new line.");
+        return nullptr;
     }
-
-    return stmt;
+    else {
+        while (!curTokenIs(NEWLINE) && !curTokenIs(EOF_TOKEN)) {
+            nextToken();
+        }
+        return stmt;
+    }
 }
 
 // Subtree structure: <EXPRESSION>
@@ -238,7 +267,7 @@ std::unique_ptr<Expression> Parser::parseExpression(Precedence precedence) {
 
     auto prefixIt = prefixParseFns.find(curToken.Type);
     if (prefixIt == prefixParseFns.end()) {
-        std::cerr << "Cant find " << curToken.Type << std::endl;
+        std::cerr << "Unexpected token: " << curToken.Type << std::endl;
         noPrefixParseFnError(curToken.Type);
         return nullptr;
     }
@@ -612,6 +641,25 @@ bool Parser::expectPeek(const TokenType& t) {
     }
 }
 
+bool Parser::customExpectPeek(const std::string& errorMessage, const TokenType& t) {
+    if (peekTokenIs(t)) {
+        nextToken();
+        return true;
+    }
+    else {
+        // Use the custom error message if provided, otherwise generate a generic one.
+        if (!errorMessage.empty()) {
+            peekError(errorMessage);
+        }
+        else {
+            std::string msg = "Expected next token to be " + std::string(t) +
+                ", got " + std::string(peekToken.Type) + " instead.";
+            peekError(msg);
+        }
+        return false;
+    }
+}
+
 // For expecting multiple peekToken types at once
 template<typename... TokenTypes> 
 bool Parser::expectPeek(TokenTypes... types) { 
@@ -622,6 +670,18 @@ bool Parser::expectPeek(TokenTypes... types) {
     else {
         std::string expectedTypes = "";
         peekError(expectedTypes);
+        return false;
+    }
+}
+
+template<typename... TokenTypes>
+bool Parser::customExpectPeek(const std::string& errorMessage, TokenTypes... types) {
+    if (peekTokenIs(types...)) {
+        nextToken();
+        return true;
+    }
+    else {
+        peekError(errorMessage);
         return false;
     }
 }
@@ -648,11 +708,17 @@ std::vector<std::string> Parser::Errors() const {
     return errors;
 }
 
-void Parser::peekError(const TokenType& expected) { // Handle custom errors here
-    std::string msg = "Expected next token to be " + std::string(expected) +
-        ", got " + std::string(peekToken.Type) + " instead.";
+void Parser::peekError(const TokenType& expected) {
+    std::string msg = "Error on line " + std::to_string(currentLine) + ": Expected next token to be " +
+        std::string(expected) + ", got " + std::string(peekToken.Type) + " instead.";
     errors.push_back(msg);
 }
+
+
+void Parser::peekError(const std::string& message) {
+    errors.push_back("Error on line " + std::to_string(currentLine) + ": " + message);
+}
+
 
 void Parser::noPrefixParseFnError(TokenType t) {
     std::string msg = "no prefix parse function for " + std::string(t) + " found";
@@ -667,4 +733,13 @@ void Parser::registerPrefix(TokenType type, prefixParseFn fn) {
 
 void Parser::registerInfix(TokenType type, infixParseFn fn) {
     infixParseFns[type] = fn;
+}
+
+void Parser::printCurTokenLiteral() {
+    if (curToken.Literal == "\n") {
+        std::cout << "\\n" << std::endl;
+    }
+    else {
+        std::cout << curToken.Literal << std::endl;
+    }
 }

@@ -181,11 +181,20 @@ public:
     std::string TokenLiteral() const override { return token.Literal; }
 
     std::unique_ptr<Statement> clone() const override {
-        auto clonedExpression = std::unique_ptr<Expression>(static_cast<Expression*>(Expression_->clone().release()));
-        auto clonedStmt = std::make_unique<ExpressionStatement>(token);
-        clonedStmt->Expression_ = std::move(clonedExpression);
+        if (!Expression_) { 
+            return nullptr; 
+        }
+
+        auto clonedExpression = Expression_->clone(); 
+        if (!clonedExpression) { 
+            return nullptr; 
+        }
+
+        auto clonedStmt = std::make_unique<ExpressionStatement>(token); 
+        clonedStmt->Expression_ = std::move(clonedExpression); 
         return clonedStmt;
     }
+
 };
 
 // Subtree structure: <EXPRESSION>
