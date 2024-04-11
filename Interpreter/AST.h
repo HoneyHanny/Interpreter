@@ -117,6 +117,72 @@ public:
     }
 };
 
+class MultiTypedDeclStatement : public Statement {
+public:
+    Token token = { "NONE", "" }; // <TYPE>
+    std::vector<std::unique_ptr<Identifier>> Names; // <IDENTS>
+    std::vector<std::unique_ptr<Expression>> Values; // <EXPRESSIONS>
+
+    MultiTypedDeclStatement(const Token& token)
+        : token(token) {}
+
+    MultiTypedDeclStatement(const Token& token, std::vector<std::unique_ptr<Identifier>> names)
+        : token(token), Names(std::move(names)) {}
+
+    MultiTypedDeclStatement(const Token& token, std::vector<std::unique_ptr<Identifier>> names, std::vector<std::unique_ptr<Expression>> values)
+        : token(token), Names(std::move(names)), Values(std::move(values)) {}
+
+    std::string String() const override {
+        std::ostringstream out;
+
+        if (token.Type != "NONE") {
+            out << TokenLiteral();
+        }
+
+        for (size_t i = 0; i < Names.size(); ++i) {
+            out << " " << Names[i]->String();
+            if (i < Names.size() - 1) {
+                out << ",";
+            }
+        }
+
+        if (!Values.empty()) {
+            out << " = ";
+            for (size_t i = 0; i < Values.size(); ++i) {
+                out << Values[i]->String();
+                if (i < Values.size() - 1) {
+                    out << ", ";
+                }
+            }
+        }
+
+        return out.str();
+    }
+
+    void statementNode() override {}
+    std::string TokenLiteral() const override { return token.Literal; }
+
+    std::unique_ptr<Statement> clone() const override {
+        std::vector<std::unique_ptr<Identifier>> namesClones;
+        std::vector<std::unique_ptr<Expression>> valuesClones;
+
+        for (const auto& name : Names) {
+            namesClones.push_back(std::make_unique<Identifier>(*name));
+        }
+
+        for (const auto& value : Values) {
+            if (value) {
+                valuesClones.push_back(std::unique_ptr<Expression>(static_cast<Expression*>(value->clone().release())));
+            }
+            else {
+                valuesClones.push_back(nullptr);
+            }
+        }
+
+        return std::make_unique<MultiTypedDeclStatement>(token, std::move(namesClones), std::move(valuesClones));
+    }
+};
+
 // Subtree structure: <RETURN> <EXPRESSION>
 class ReturnStatement : public Statement {
 public:

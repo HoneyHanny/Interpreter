@@ -190,7 +190,7 @@ int main(int argc, char* argv[]) {
                 std::cout << errors << std::endl;
             }
 
-           /* if (!enforceProgramStructure(clonedStatements)) {
+            /* if (!enforceProgramStructure(clonedStatements)) {
                 std::exit(EXIT_FAILURE);
             }*/
             auto env = std::make_shared<Environment>();

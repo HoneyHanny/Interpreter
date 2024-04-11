@@ -8,21 +8,55 @@ void Parser::nextToken() {
     peekToken = lexer->NextToken();
 }   
 
-std::unique_ptr<Program> Parser::ParseProgram() {
-    Tracer tracer("parseProgram");
+bool Parser::isTypedDeclStatementStart() const {
+    // Check if the current token is a type keyword that can start a typed declaration statement
+    return curToken.Type == INT ||
+        curToken.Type == CHAR ||
+        curToken.Type == BOOL ||
+        curToken.Type == FLOAT ||
+        curToken.Type == STRING;
+}
 
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+std::unique_ptr<Program> Parser::ParseProgram() {
     auto program = std::make_unique<Program>();
 
     while (curToken.Type != EOF_TOKEN) {
-        auto stmt = parseStatement();
-        if (stmt != nullptr) {
-            program->Statements.push_back(std::move(stmt));
+        if (isTypedDeclStatementStart()) { // A helper function to check if the current token starts a typed declaration
+            auto declWrappers = parseTypedDeclStatements(); // This now returns a vector of DeclStatementWrapper
+
+            for (auto& wrapper : declWrappers) {
+                std::visit(overloaded{
+                    [&program](std::unique_ptr<TypedDeclStatement>& stmt) {
+                        program->Statements.push_back(std::move(stmt));
+                    },
+                    [&program](std::unique_ptr<MultiTypedDeclStatement>& multiStmt) {
+                        // Here you might need to split multiStmt into individual statements
+                        // if your Program structure cannot directly accept MultiTypedDeclStatement.
+                        // This step depends on how you want to handle MultiTypedDeclStatement in your AST.
+                        // As an example, we'll just static cast them for now, but you might handle differently.
+                        for (auto& name : multiStmt->Names) {
+                            auto stmt = std::make_unique<TypedDeclStatement>(multiStmt->token, std::move(name)); // Assuming similar constructor exists
+                            program->Statements.push_back(std::move(stmt));
+                        }
+                    }
+                    }, wrapper.content);
+            }
+        }
+        else {
+            // Handle other statement types
+            auto stmt = parseStatement();
+            if (stmt != nullptr) {
+                program->Statements.push_back(std::move(stmt));
+            }
         }
         nextToken();
     }
-
     return program;
 }
+
 
 
 std::unique_ptr<Statement> Parser::parseStatement() {
@@ -34,23 +68,38 @@ std::unique_ptr<Statement> Parser::parseStatement() {
         }
     }
 
-    // Typed Declaration Statements
-    if (curToken.Type == INT 
-        || curToken.Type == CHAR 
-        || curToken.Type == BOOL
-        || curToken.Type == FLOAT
-        || curToken.Type == STRING) 
-    {
+    //// Typed Declaration Statements
+    //if (curToken.Type == INT 
+    //    || curToken.Type == CHAR 
+    //    || curToken.Type == BOOL
+    //    || curToken.Type == FLOAT
+    //    || curToken.Type == STRING) 
+    //{
+    //    auto variantResult = parseTypedDeclStatement();
 
-       /* if (peekTokenIs(NEWLINE)) {
-            std::cout << "FN statement" << std::endl;
-            return nullptr;
-        }*/
+    //    // Use std::visit to handle each type in the variant
+    //    std::unique_ptr<Statement> result = std::visit([](auto&& arg) -> std::unique_ptr<Statement> {
+    //        using T = std::decay_t<decltype(arg)>;
+    //        if constexpr (std::is_same_v<T, std::unique_ptr<TypedDeclStatement>> ||
+    //            std::is_same_v<T, std::unique_ptr<MultiTypedDeclStatement>>) {
+    //            // For TypedDeclStatement or MultiTypedDeclStatement, return as is.
+    //            return std::move(arg);
+    //        }
+    //        else if constexpr (std::is_same_v<T, nullptr_t>) {
+    //            // Handle the nullptr case.
+    //            return nullptr;
+    //        }
+    //        else {
+    //            // This should never be reached if you only have the specified types in your variant.
+    //            //static_assert(always_false<T>::value, "Non-exhaustive visitor!");
+    //            return nullptr;
+    //        }
+    //        }, variantResult);
 
-        return parseTypedDeclStatement();
-    }
+    //    return result;
+    //}
     // Return Statements
-    else if (curToken.Type == RETURN) {
+    if (curToken.Type == RETURN) {
         return parseReturnStatement();
     }
 
@@ -108,53 +157,55 @@ std::unique_ptr<MarkerStatement> Parser::parseMarkerStatement(Token type, Token 
     return stmt;
 }
 
-// Subtree structure: <TYPE> <IDENT> <ASSIGN> <EXPRESSION>
-std::unique_ptr<TypedDeclStatement> Parser::parseTypedDeclStatement() {
-    Tracer tracer("parseTypedDeclStatement");
 
-    auto stmt = std::make_unique<TypedDeclStatement>(curToken);
+// Typed statement is either a declaration w/out value or a function parameter:
+// 
+// NEWLINE: Statement is a variable declaration (e.g. INT x) 
+// INT i = 0
+// INT x, y, z = 5 (not yet implemented)
+// 
+// COMMA and RPAREN: Statement is part of a function arguement
+// FUNCTION add(INT x, INT y) INT:
+// #[...]
 
-    if (!expectPeek(IDENT)) {
-        errors.push_back("Invalid variable declaration.");
-        return nullptr;
-    }
+std::vector<DeclStatementWrapper> Parser::parseTypedDeclStatements() {
+    Tracer tracer("parseTypedDeclStatements");
 
-    stmt->Name = std::make_unique<Identifier>(curToken, curToken.Literal);
+    Token typeToken = curToken;
+    std::vector<DeclStatementWrapper> declarations;
 
-    // Typed statement is either a declaration w/out value or a function parameter:
-    // NEWLINE: Statement is a variable declaration (e.g. INT x) 
-    // FUNCTION add(INT x, INT y) INT:
-    // INT x, y, z = 5 (not yet implemented)
-    // COMMA and RPAREN: Statement is part of a function arguement
-    if (peekTokenIs(COMMA, NEWLINE, RPAREN)) { 
-        return stmt;
-    }
+    do {
+        std::vector<std::unique_ptr<Identifier>> names;
+        std::unique_ptr<Expression> value;
 
-    if (!peekTokenIs(ASSIGN)) {
-        return stmt;
-    }
-
-    nextToken(); // Assign
-
-    if (!expectPeek(IDENT, NUM, STRING_LITERAL, CHAR_LITERAL, STRING)) {
-        return nullptr;
-    }
-
-    //nextToken();
-
-    stmt->Value = parseExpression(Precedence::LOWEST);
-
-    // If statement not on new line
-    if (!expectPeek(NEWLINE, EOF_TOKEN)) {
-        //errors.push_back("Statement not on new line.");
-        return nullptr;
-    }
-    else {
-        while (!curTokenIs(NEWLINE) && !curTokenIs(EOF_TOKEN)) {
-            nextToken();
+        if (!expectPeek(IDENT, "Expected identifier in declaration.")) {
+            return {};
         }
-        return stmt;
+        names.push_back(std::make_unique<Identifier>(curToken, curToken.Literal));
+
+        // Check for assignment right after the identifier
+        if (peekTokenIs(ASSIGN)) {
+            nextToken(); // Consume ASSIGN
+            nextToken(); // Move to the expression
+            value = parseExpression(Precedence::LOWEST);
+            declarations.push_back(DeclStatementWrapper(std::make_unique<TypedDeclStatement>(typeToken, std::move(names.back()), std::move(value))));
+        }
+        else {
+            declarations.push_back(DeclStatementWrapper(std::make_unique<TypedDeclStatement>(typeToken, std::move(names.back()))));
+        }
+
+        // Check for comma to continue the loop or break if it's the end of the declaration list
+        if (!peekTokenIs(COMMA)) break;
+        nextToken(); // Consume COMMA
+
+    } while (true);
+
+    // Ensure end of declaration with NEWLINE or EOF_TOKEN
+    if (!expectPeek(NEWLINE, EOF_TOKEN, "Expected end of statement after declaration.")) {
+        return {};
     }
+
+    return declarations;
 }
 
 // Subtree structure: <RETURN> <EXPRESSION>
@@ -229,6 +280,7 @@ std::unique_ptr<BlockStatement> Parser::parseBlockStatement() {
 
 std::vector<std::unique_ptr<TypedDeclStatement>> Parser::parseFunctionParameters() {
     Tracer tracer("parseFunctionParameters");
+    std::cout << "Called" << std::endl;
 
     std::vector<std::unique_ptr<TypedDeclStatement>> typedDeclStmts;
 
@@ -240,14 +292,27 @@ std::vector<std::unique_ptr<TypedDeclStatement>> Parser::parseFunctionParameters
     do {
         nextToken(); // Move to the first parameter or next parameter after ','
 
-        // Assuming parseTypedDeclStatement parses a parameter declaration and returns a unique_ptr<TypedDeclStatement>
-        auto typedDeclStmt = parseTypedDeclStatement();
-        if (typedDeclStmt == nullptr) {
-            std::cerr << "Expected a typed declaration statement." << std::endl;
-            return {}; // Return an empty vector to indicate failure
+        if (isTypedDeclStatementStart()) {
+            auto declWrappers = parseTypedDeclStatements();
+
+            for (auto& wrapper : declWrappers) {
+                std::visit(overloaded{
+                    [&typedDeclStmts](std::unique_ptr<TypedDeclStatement>& stmt) {
+                        typedDeclStmts.push_back(std::move(stmt));
+                    },
+                    [](std::unique_ptr<MultiTypedDeclStatement>& multiStmt) {
+                        // MultiTypedDeclStatement is not expected in function parameters.
+                        // You can log an error or handle it according to your needs.
+                        // For simplicity, ignoring it here but in a real scenario, you should handle this case.
+                        std::cerr << "MultiTypedDeclStatement is not allowed in function parameters." << std::endl;
+                    },
+                    [](auto&&) {
+                        // Handle error or nullptr cases
+                    }
+                }, wrapper.content); // Assuming wrapper is the variant holding either TypedDeclStatement or MultiTypedDeclStatement
+            }
         }
 
-        typedDeclStmts.push_back(std::move(typedDeclStmt));
 
         if (!peekTokenIs(COMMA)) {
             break; // Exit if the next token is not a comma

@@ -4,6 +4,7 @@
 #include <functional>
 #include <iostream>
 #include <initializer_list>
+#include <variant>
 #include "Lexer.h" 
 #include "Token.h" 
 #include "AST.h"  
@@ -31,6 +32,15 @@ static ParseState mainstate = ParseState::BeginCode;
 using prefixParseFn = std::function<std::unique_ptr<Expression>()>;
 using infixParseFn = std::function<std::unique_ptr<Expression>(std::unique_ptr<Expression>)>;
 
+class DeclStatementWrapper {
+public:
+    // Can hold either a single TypedDeclStatement or a MultiTypedDeclStatement
+    std::variant<std::unique_ptr<TypedDeclStatement>, std::unique_ptr<MultiTypedDeclStatement>> content;
+
+    DeclStatementWrapper(std::unique_ptr<TypedDeclStatement> stmt) : content(std::move(stmt)) {}
+    DeclStatementWrapper(std::unique_ptr<MultiTypedDeclStatement> stmt) : content(std::move(stmt)) {}
+};
+
 class Parser {
 public:
     Parser(std::unique_ptr<Lexer> lexer) : lexer(std::move(lexer)) {
@@ -48,10 +58,12 @@ public:
     Token currentParsedType = {"", ""};
     std::unique_ptr<Expression> currentParsedCallName = nullptr;
 
+    bool isTypedDeclStatementStart() const;
+
     std::unique_ptr<Program> ParseProgram();
     std::unique_ptr<Statement> parseStatement();
     std::unique_ptr<MarkerStatement> parseMarkerStatement(Token type, Token codeToken);
-    std::unique_ptr<TypedDeclStatement> parseTypedDeclStatement();
+    std::vector<DeclStatementWrapper> parseTypedDeclStatements();
     std::unique_ptr<ReturnStatement> parseReturnStatement();
     std::unique_ptr<ExpressionStatement> parseExpressionStatement();
     std::unique_ptr<BlockStatement> parseBlockStatement();
@@ -270,6 +282,10 @@ static bool isEndCodeStatement(const std::unique_ptr<Statement>& stmt) {
 
 static bool isTransitionToVariableDeclarations(const std::unique_ptr<Statement>& stmt) {
     if (auto typedDeclStmt = dynamic_cast<TypedDeclStatement*>(stmt.get())) {
+        //std::cout << "Transition to var decl state" << std::endl;
+        return true;
+    }
+    else if (auto multiTypedDeclStmt = dynamic_cast<MultiTypedDeclStatement*>(stmt.get())) {
         //std::cout << "Transition to var decl state" << std::endl;
         return true;
     }
