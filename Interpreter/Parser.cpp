@@ -693,7 +693,7 @@ std::unique_ptr<Expression> Parser::parseAssignExpression(std::unique_ptr<Expres
 
     //std::cout << "Parsed token: " << curToken.Literal << std::endl;
     ////std::cout << "Parsed expression: " << name->String() << std::endl;
-    while (!peekTokenIs(NEWLINE)) {
+    while (!peekTokenIs(NEWLINE, DOT)) {
         if (!curTokenIs(IDENT)) { // Consume IDENT
             return nullptr;
         }
@@ -708,6 +708,7 @@ std::unique_ptr<Expression> Parser::parseAssignExpression(std::unique_ptr<Expres
         }
         nextToken();
     }
+
     assignExp->setValue(parseExpression(Precedence::LOWEST));
     if (!expectPeek(NEWLINE, EOF_TOKEN)) {
         return nullptr;

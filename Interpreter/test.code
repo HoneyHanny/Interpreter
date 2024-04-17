@@ -1,11 +1,5 @@
 BEGIN CODE
-	INT x = 7, y = 2, z = 1
-	IF (x == 7)
-	BEGIN IF
-		x = 4
-		x = 3
-	END IF
-	l = 90
-	DISPLAY: x
-	DISPLAY: "HELLO WORLD"
+	FLOAT x = 1.0, z = 1, y = 2.0
+	x = 2.0
+	DISPLAY: y 
 END CODE

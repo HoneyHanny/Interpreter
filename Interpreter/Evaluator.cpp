@@ -157,6 +157,11 @@ static bool isError(const std::shared_ptr<Object>& obj) {
     return false;
 
 }
+
+static void logError(const std::string& errorMessage) {
+    std::cout << "Error: " << errorMessage << std::endl;
+}
+
 static std::shared_ptr<Object> evalProgram(const std::vector<std::unique_ptr<Statement>>& stmts, const std::shared_ptr<Environment>& env) {
     std::shared_ptr<Object> result;
     for (const auto& statement : stmts) {
@@ -168,7 +173,8 @@ static std::shared_ptr<Object> evalProgram(const std::vector<std::unique_ptr<Sta
                 return std::shared_ptr<Object>(returnValue->TakeValue());
             }
             else if (auto error = dynamic_cast<ErrorObject*>(result.get())) {
-                return result;
+                std::cout << error->Message << std::endl;
+                //return result;
             }
         }
         else {
@@ -560,6 +566,16 @@ std::shared_ptr<Object> applyFunction(std::shared_ptr<Object>& fn, const std::ve
     }
 }
 
+static bool isTypeCompatible(const TokenType declaredType, const std::shared_ptr<Object>& value) {
+    if (!value) return false; // null check for safety
+    if (declaredType == INT && dynamic_cast<IntegerObject*>(value.get())) return true;
+    if (declaredType == FLOAT && dynamic_cast<FloatObject*>(value.get())) return true;
+    if (declaredType == CHAR && dynamic_cast<Char*>(value.get())) return true;
+    if (declaredType == BOOL && dynamic_cast<BooleanObject*>(value.get())) return true;
+    if (declaredType == STRING && dynamic_cast<String*>(value.get())) return true;
+    return false;
+}
+
 std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment>& env) {
     if (auto programNode = dynamic_cast<const Program*>(node)) {
         return evalProgram(programNode->Statements, env);
@@ -628,6 +644,7 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
     }
     else if (auto multiStmt = dynamic_cast<const MultiTypedDeclStatement*>(node)) {
         incrementEvaluatorLine();
+        //std::cout << multiStmt->token.Literal << std::endl;
         for (size_t i = 0; i < multiStmt->Names.size(); ++i) {
             auto& name = multiStmt->Names[i];
             std::shared_ptr<Object> value;
@@ -635,6 +652,11 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
             // Check if there is a corresponding value for this name
             if (i < multiStmt->Values.size() && multiStmt->Values[i]) {
                 value = Eval(multiStmt->Values[i].get(), env); // Evaluate the expression associated with the name
+                if (!isTypeCompatible(multiStmt->token.Literal, value)) {
+                    //return std::make_shared<ErrorObject>("Type mismatch for '" + name->Value + "': expected " + multiStmt->token.Literal + ", got " + value->Type());
+                    logError("Type mismatch for '" + name->Value + "': expected " + multiStmt->token.Literal + ", got " + value->Type());
+                    continue;
+                }
                 if (isError(value)) {
                     return value; // Propagate error
                 }
@@ -660,6 +682,9 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
             auto val = Eval(typedDeclStmt->Value.get(), env);
             if (isError(val)) {
                 return val;
+            }
+            if (!isTypeCompatible(typedDeclStmt->token.Type, val)) {
+                return std::make_shared<ErrorObject>("Type mismatch: Expected " + typedDeclStmt->token.Literal + " but got " + val->Type());
             }
             env->Set(typedDeclStmt->Name->Value, typedDeclStmt->token, val);
         }
@@ -713,15 +738,34 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
         }
 
         for (auto it = assignExpr->names.rbegin(); it != assignExpr->names.rend(); ++it) {
-            if (env->GetObject((*it)->TokenLiteral()) != nullptr) {
-                //std::cout << (*it)->TokenLiteral() << std::endl;
-                env->Set((*it)->TokenLiteral(), Token("", ""), value);
-            }
-            else {
-                return newError("Unknown Identifier: '" + (*it)->TokenLiteral() + "'");
-            }
-        }
+            auto identifier = (*it)->TokenLiteral();
+            auto expectedType = env->GetType(identifier);  // Retrieve expected type for the identifier
 
+            // If the identifier exists but types don't match, return an error
+            if ((
+                expectedType.Literal == INT   || 
+                expectedType.Literal == CHAR  ||
+                expectedType.Literal == FLOAT ||
+                expectedType.Literal == BOOL  ||
+                expectedType.Literal == STRING 
+                ) && !isTypeCompatible(expectedType.Literal, value)) {
+                return newError("Type mismatch for '" + identifier + "': expected " + expectedType.Literal + ", got " + value->Type());
+            }
+
+            // If the identifier does not exist in the environment, return an error
+            if (!(
+                expectedType.Literal == INT   ||
+                expectedType.Literal == CHAR  ||
+                expectedType.Literal == FLOAT ||
+                expectedType.Literal == BOOL  ||
+                expectedType.Literal == STRING
+                )) {
+                return newError("Unknown Identifier: '" + identifier + "'");
+            }
+
+            // If types match, or no type information is required, set the new value
+            env->Set(identifier, Token("", ""), value);
+        }
         return value;
     }
     return nullptr;
