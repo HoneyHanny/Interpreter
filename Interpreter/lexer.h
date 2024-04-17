@@ -3,8 +3,12 @@
 #include <iostream>
 #include "Token.h"
 
+
 class Lexer {
 public:
+    static int lexerCurrentLine;
+    static std::vector<int> commentLinePositions;
+
     Lexer(const std::string& input); 
 
     void readChar(); // Reads the next character and advances the position

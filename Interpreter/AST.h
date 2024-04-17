@@ -615,24 +615,28 @@ public:
 
 class AssignExpression : public Expression {
 public:
-    std::unique_ptr<Expression> name;
-    std::unique_ptr<Expression> Expression_; 
+    std::vector<std::unique_ptr<Expression>> names;
+    std::unique_ptr<Expression> value;
 
-    AssignExpression(std::unique_ptr<Expression> name)
-        : name(std::move(name)) {}
+    AssignExpression() {}
+
+    void addName(std::unique_ptr<Expression> name) {
+        names.push_back(std::move(name));
+    }
+
+    void setValue(std::unique_ptr<Expression> val) {
+        value = std::move(val);
+    }
 
     std::string String() const override {
         std::ostringstream out;
-
-        out << name->String() << " = ";
-
-        if (Expression_ != nullptr) {
-            out << Expression_->String();
+        for (size_t i = 0; i < names.size(); ++i) {
+            if (i > 0) out << " = ";
+            out << names[i]->String();
         }
-        else {
-            out << "";
+        if (value) {
+            out << " = " << value->String();
         }
-
         return out.str();
     }
 
@@ -640,10 +644,13 @@ public:
     std::string TokenLiteral() const override { return ""; }
 
     std::unique_ptr<Expression> clone() const override {
-        auto clonedName = std::unique_ptr<Expression>(static_cast<Expression*>(name->clone().release()));
-        auto clonedExpression = std::unique_ptr<Expression>(static_cast<Expression*>(Expression_->clone().release()));
-        auto clonedExpr = std::make_unique<AssignExpression>(std::move(clonedName));
-        clonedExpr->Expression_ = std::move(clonedExpression);
+        auto clonedExpr = std::make_unique<AssignExpression>();
+        for (const auto& n : names) {
+            clonedExpr->addName(std::unique_ptr<Expression>(static_cast<Expression*>(n->clone().release())));
+        }
+        if (value) {
+            clonedExpr->setValue(std::unique_ptr<Expression>(static_cast<Expression*>(value->clone().release())));
+        }
         return clonedExpr;
     }
 };

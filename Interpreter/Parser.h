@@ -140,6 +140,17 @@ private:
     Token curToken;
     Token peekToken;
 
+    size_t commentIndex = 0; 
+
+    void incrementLine() {
+        currentLine++;
+        // Continue to skip comment lines without modifying the vector
+        while (commentIndex < Lexer::commentLinePositions.size() && currentLine == Lexer::commentLinePositions[commentIndex]) {
+            currentLine++;
+            commentIndex++;  // Move to the next comment line index
+        }
+    }
+
     void nextToken();
 
     // Setup the prefix parse functions

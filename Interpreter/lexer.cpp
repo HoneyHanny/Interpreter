@@ -5,6 +5,9 @@ Lexer::Lexer(const std::string& input)
     readChar(); // Initialize the first character
 }
 
+int Lexer::lexerCurrentLine = 1;
+std::vector<int> Lexer::commentLinePositions;
+
 // Public function definitions
 
 // Reads the next character and advances the position
@@ -114,6 +117,9 @@ Token Lexer::NextToken() {
         break;
     case '#':
         skipComment();
+        if (ch == '\n') {
+            lexerCurrentLine++;
+        }
         tok = { NEWLINE, std::string(1, ch) };
         break;
     case '.':
@@ -157,6 +163,7 @@ Token Lexer::NextToken() {
         tok = { AMPERSAND, std::string(1, ch) };
         break;
     case '\n':
+        lexerCurrentLine++;
         tok = { NEWLINE, std::string(1, ch) };
         break;
     case 0: // End of file / input
@@ -268,6 +275,7 @@ void Lexer::skipComment() {
     while (ch != '\n' && ch != 0) {
         readChar();  
     }
+    commentLinePositions.push_back(lexerCurrentLine);
     //readChar();
 }
 

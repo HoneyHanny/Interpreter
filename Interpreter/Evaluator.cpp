@@ -1,6 +1,17 @@
 #include "Evaluator.h"
 
 int evaluatorCurrentLine = 0;
+static size_t evaluatorCommentIndex;
+
+static void incrementEvaluatorLine() {
+    evaluatorCurrentLine++;
+    // Continue to skip comment lines without modifying the vector
+    while (evaluatorCommentIndex < Lexer::commentLinePositions.size() &&
+        evaluatorCurrentLine == Lexer::commentLinePositions[evaluatorCommentIndex]) {
+        evaluatorCurrentLine++;
+        evaluatorCommentIndex++;  // Move to the next comment line index
+    }
+}
 
 std::unordered_map<std::string, std::shared_ptr<Builtin>> builtins = {
     {"LEN", std::make_shared<Builtin>(
@@ -42,6 +53,10 @@ std::unordered_map<std::string, std::shared_ptr<Builtin>> builtins = {
                 std::cout << c->Value << std::endl;
                 return std::make_shared<IntegerObject>(1);
                 //return num;
+            }
+            if (auto f = std::dynamic_pointer_cast<FloatObject>(args[0])) {
+                std::cout << f->Value << std::endl;
+                return std::make_shared<IntegerObject>(1);
             }
             else {
               return std::make_shared<ErrorObject>("argument to `DISPLAY` not supported, got " + args[0]->Type());
@@ -450,16 +465,16 @@ static std::shared_ptr<Object> evalIfExpression(const IfExpression* ie, const st
         return condition;
     }
 
-    evaluatorCurrentLine++;
+    incrementEvaluatorLine();
     if (isTruthy(condition)) {
         return Eval(ie->Consequence.get(), env);
     }
     else if (ie->Alternative) {
-        evaluatorCurrentLine++;
+        incrementEvaluatorLine();
         return Eval(ie->Alternative.get(), env);
     }
     else {
-        evaluatorCurrentLine++;
+        incrementEvaluatorLine();
         return std::make_unique<NullObject>();
     }
 }
@@ -468,7 +483,7 @@ static std::shared_ptr<Object> evalBlockStatement(const BlockStatement* block, c
     std::shared_ptr<Object> result = nullptr;
 
     for (const auto& statement : block->Statements) {
-        evaluatorCurrentLine++;
+        incrementEvaluatorLine();
         result = Eval(statement.get(), env);
 
         if (result != nullptr) {
@@ -550,7 +565,7 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
         return evalProgram(programNode->Statements, env);
     }
     else if (auto markerStmt = dynamic_cast<const MarkerStatement*>(node)) {
-        evaluatorCurrentLine++;
+        incrementEvaluatorLine();
     }
     else if (auto exprStmtNode = dynamic_cast<const ExpressionStatement*>(node)) { // Must increment line number
         if (exprStmtNode->token.Type == FUNCTION && exprStmtNode->name) {
@@ -561,7 +576,7 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
             env->Set(exprStmtNode->name->TokenLiteral(), exprStmtNode->token, val);
         }
         else {
-            evaluatorCurrentLine++;
+            incrementEvaluatorLine();
             return Eval(exprStmtNode->Expression_.get(), env);
         }
     } 
@@ -611,8 +626,36 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
         }
         return std::make_unique<ReturnValue>(val);
     }
+    else if (auto multiStmt = dynamic_cast<const MultiTypedDeclStatement*>(node)) {
+        incrementEvaluatorLine();
+        for (size_t i = 0; i < multiStmt->Names.size(); ++i) {
+            auto& name = multiStmt->Names[i];
+            std::shared_ptr<Object> value;
+
+            // Check if there is a corresponding value for this name
+            if (i < multiStmt->Values.size() && multiStmt->Values[i]) {
+                value = Eval(multiStmt->Values[i].get(), env); // Evaluate the expression associated with the name
+                if (isError(value)) {
+                    return value; // Propagate error
+                }
+            }
+            else {
+                value = std::make_shared<NullObject>(); // Default to Null if no value provided
+            }
+
+            // Assuming the name is an Identifier and has a string value field
+            if (name) {
+                env->Set(name->Value, multiStmt->token, value);
+            }
+            else {
+                // Error handling if name is somehow null
+                return std::make_shared<ErrorObject>("Invalid variable name in declaration.");
+            }
+        }
+    }
+
     else if (const auto* typedDeclStmt = dynamic_cast<const TypedDeclStatement*>(node)) {
-        evaluatorCurrentLine++;
+        incrementEvaluatorLine();
         if (typedDeclStmt->Value) {
             auto val = Eval(typedDeclStmt->Value.get(), env);
             if (isError(val)) {
@@ -660,11 +703,26 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
         return result;
     }
     else if (const auto* assignExpr = dynamic_cast<const AssignExpression*>(node)) {
-        auto val = Eval(assignExpr->Expression_.get(), env);
-        if (isError(val)) {
-            return val;
+        if (assignExpr->names.empty()) {
+            return newError("Assignment without a variable name.");
         }
-        env->Set(assignExpr->name->TokenLiteral(), Token("",""), val); // TODO FIX THIS LATER
+
+        auto value = Eval(assignExpr->value.get(), env);
+        if (isError(value)) {
+            return value;
+        }
+
+        for (auto it = assignExpr->names.rbegin(); it != assignExpr->names.rend(); ++it) {
+            if (env->GetObject((*it)->TokenLiteral()) != nullptr) {
+                //std::cout << (*it)->TokenLiteral() << std::endl;
+                env->Set((*it)->TokenLiteral(), Token("", ""), value);
+            }
+            else {
+                return newError("Unknown Identifier: '" + (*it)->TokenLiteral() + "'");
+            }
+        }
+
+        return value;
     }
     return nullptr;
 }

@@ -3,7 +3,7 @@
 
 void Parser::nextToken() {
     curToken = peekToken;
-    if (curToken.Literal == NEWLINE) currentLine++;
+    if (curToken.Literal == NEWLINE) incrementLine();
 
     peekToken = lexer->NextToken();
 }   
@@ -24,25 +24,38 @@ std::unique_ptr<Program> Parser::ParseProgram() {
     auto program = std::make_unique<Program>();
 
     while (curToken.Type != EOF_TOKEN) {
-        if (isTypedDeclStatementStart()) { // A helper function to check if the current token starts a typed declaration
-            auto declWrappers = parseTypedDeclStatements(); // This now returns a vector of DeclStatementWrapper
+        if (isTypedDeclStatementStart()) { // Check if the current token starts a typed declaration
+            auto declWrappers = parseTypedDeclStatements(); // Returns a vector of DeclStatementWrapper
 
-            for (auto& wrapper : declWrappers) {
+            // Determine whether to create a single or multiple declarations
+            if (declWrappers.size() == 1) {
                 std::visit(overloaded{
                     [&program](std::unique_ptr<TypedDeclStatement>& stmt) {
                         program->Statements.push_back(std::move(stmt));
                     },
                     [&program](std::unique_ptr<MultiTypedDeclStatement>& multiStmt) {
-                        // Here you might need to split multiStmt into individual statements
-                        // if your Program structure cannot directly accept MultiTypedDeclStatement.
-                        // This step depends on how you want to handle MultiTypedDeclStatement in your AST.
-                        // As an example, we'll just static cast them for now, but you might handle differently.
-                        for (auto& name : multiStmt->Names) {
-                            auto stmt = std::make_unique<TypedDeclStatement>(multiStmt->token, std::move(name)); // Assuming similar constructor exists
-                            program->Statements.push_back(std::move(stmt));
-                        }
+                        program->Statements.push_back(std::move(multiStmt));
                     }
-                    }, wrapper.content);
+                    }, declWrappers[0].content);
+            }
+            else {
+                Token commonToken = std::get<std::unique_ptr<TypedDeclStatement>>(declWrappers[0].content)->token;
+                auto multiStmt = std::make_unique<MultiTypedDeclStatement>(commonToken);
+
+                for (auto& wrapper : declWrappers) {
+                    std::visit(overloaded{
+                        [multiStmt = multiStmt.get()](std::unique_ptr<TypedDeclStatement>& stmt) mutable {
+                            multiStmt->Names.push_back(std::move(stmt->Name));
+                            if (stmt->Value) {  // Assume values align with names
+                                multiStmt->Values.push_back(std::move(stmt->Value));
+                            }
+                        },
+                        [](std::unique_ptr<MultiTypedDeclStatement>&) {
+                            // This case should not happen if parseTypedDeclStatements is implemented correctly
+                        }
+                        }, wrapper.content);
+                }
+                program->Statements.push_back(std::move(multiStmt));
             }
         }
         else {
@@ -56,6 +69,7 @@ std::unique_ptr<Program> Parser::ParseProgram() {
     }
     return program;
 }
+
 
 
 
@@ -671,12 +685,36 @@ std::vector<std::unique_ptr<Expression>> Parser::parseCallArguments() {
 
 std::unique_ptr<Expression> Parser::parseAssignExpression(std::unique_ptr<Expression> name) {
     Tracer tracer("parseAssignExpression");
-    nextToken();
-    auto assignExp = std::make_unique<AssignExpression>(std::move(name));
-    assignExp->Expression_ = parseExpression(Precedence::LOWEST);
-    if (peekTokenIs(NEWLINE, EOF_TOKEN)) {
+    auto assignExp = std::make_unique<AssignExpression>();
+    assignExp->addName(std::move(name));
+    
+    nextToken(); // Consume ASSIGN
+
+
+    //std::cout << "Parsed token: " << curToken.Literal << std::endl;
+    ////std::cout << "Parsed expression: " << name->String() << std::endl;
+    while (!peekTokenIs(NEWLINE)) {
+        if (!curTokenIs(IDENT)) { // Consume IDENT
+            return nullptr;
+        }
+        else {
+            std::unique_ptr<Expression> exp = parseIdentifier();
+            assignExp->addName(std::move(exp)); // Add IDENT to AssignExpression
+        }
+        nextToken();
+
+        if (!curTokenIs(ASSIGN)) { // Consume ASSIGN
+            return nullptr;
+        }
         nextToken();
     }
+    assignExp->setValue(parseExpression(Precedence::LOWEST));
+    if (!expectPeek(NEWLINE, EOF_TOKEN)) {
+        return nullptr;
+    }
+    /*if (peekTokenIs(NEWLINE, EOF_TOKEN)) {
+        nextToken();
+    }*/
     return assignExp;
 }
 
