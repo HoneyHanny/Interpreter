@@ -18,6 +18,7 @@ public:
 
     std::shared_ptr<Object> GetObject(const std::string& name) const;
     Token GetType(const std::string& name) const;
+    bool Exists(const std::string& name) const;
     void Set(const std::string& name, Token type, std::shared_ptr<Object> val);
     std::string GetNameByObject(const std::shared_ptr<Object>& obj) const;
 };

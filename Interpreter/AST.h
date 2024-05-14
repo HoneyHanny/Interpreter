@@ -3,6 +3,7 @@
 #include <sstream>
 #include <vector>
 #include <memory>
+#include <iostream>
 #include "Token.h"
 
 class Node {
@@ -400,12 +401,31 @@ public:
 
     void expressionNode() override {}
 
+    //std::unique_ptr<Expression> clone() const override {
+    //    auto clonedLeft = std::unique_ptr<Expression>(static_cast<Expression*>(Left->clone().release()));
+    //    auto clonedRight = std::unique_ptr<Expression>(static_cast<Expression*>(Right->clone().release()));
+    //    auto clonedExpr = std::make_unique<InfixExpression>(token, std::move(clonedLeft), Operator, std::move(clonedRight));
+    //    return clonedExpr;
+    //    //return nullptr;
+    //}
+
     std::unique_ptr<Expression> clone() const override {
-        auto clonedLeft = std::unique_ptr<Expression>(static_cast<Expression*>(Left->clone().release()));
-        auto clonedRight = std::unique_ptr<Expression>(static_cast<Expression*>(Right->clone().release()));
+        // Clone left and right expressions safely
+        std::unique_ptr<Expression> clonedLeft;
+        std::unique_ptr<Expression> clonedRight;
+
+        if (Left) {
+            clonedLeft = Left->clone(); // Automatically resolves to the correct type
+        }
+        if (Right) {
+            clonedRight = Right->clone(); // Automatically resolves to the correct type
+        }
+
+        // Create a new InfixExpression with the cloned sides
         auto clonedExpr = std::make_unique<InfixExpression>(token, std::move(clonedLeft), Operator, std::move(clonedRight));
         return clonedExpr;
     }
+
 };
 
 class Boolean : public Expression {
@@ -505,6 +525,42 @@ public:
         clonedIfExpr->Alternative = std::move(clonedAlternative);
 
         return clonedIfExpr;
+    }
+};
+
+class WhileExpression : public Expression {
+public:
+    Token token;
+    std::unique_ptr<Expression> Condition;
+    std::unique_ptr<BlockStatement> Body;
+
+    WhileExpression(const Token& tok) : token(tok) {}
+
+    void expressionNode() override {}
+
+    std::string TokenLiteral() const override {
+        return token.Literal;
+    }
+
+    std::string String() const override {
+        std::ostringstream out;
+        out << "WHILE ";
+        out << Condition->String();
+        out << "\nBEGIN WHILE\n";
+        out << Body->String();
+        out << "\nEND WHILE";
+        return out.str();
+    }
+
+    std::unique_ptr<Expression> clone() const override {
+        auto clonedCondition = std::unique_ptr<Expression>(static_cast<Expression*>(Condition->clone().release()));
+        auto clonedBody = std::unique_ptr<BlockStatement>(static_cast<BlockStatement*>(Body->clone().release()));
+
+        auto clonedWhileExpr = std::make_unique<WhileExpression>(token);
+        clonedWhileExpr->Condition = std::move(clonedCondition);
+        clonedWhileExpr->Body = std::move(clonedBody);
+
+        return clonedWhileExpr;
     }
 };
 

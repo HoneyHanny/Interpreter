@@ -30,6 +30,7 @@ void ExecuteTestCases() {
     //TestOperatorPrecedenceParsing();
     //TestBooleanExpression();
     //TestIfExpression();
+    TestWhileExpression();
     //TestNestedIfExpression();
     //TestNestedIfInElseExpression();
     //TestIfElseExpression();
@@ -38,7 +39,7 @@ void ExecuteTestCases() {
     //TestCallExpressionParsing();
     //TestStringLiteralExpression();
     //TestCharLiteralExpression();
-    TestASTStructure();
+    //TestASTStructure();
 
     // Testing for AST
     //TestString();

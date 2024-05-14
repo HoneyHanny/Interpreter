@@ -28,7 +28,10 @@ std::unique_ptr<Program> Parser::ParseProgram() {
             auto declWrappers = parseTypedDeclStatements(); // Returns a vector of DeclStatementWrapper
 
             // Determine whether to create a single or multiple declarations
-            if (declWrappers.size() == 1) {
+            if (declWrappers.size() == 0) {
+                // pass
+            }
+            else if (declWrappers.size() == 1) {
                 std::visit(overloaded{
                     [&program](std::unique_ptr<TypedDeclStatement>& stmt) {
                         program->Statements.push_back(std::move(stmt));
@@ -192,7 +195,10 @@ std::vector<DeclStatementWrapper> Parser::parseTypedDeclStatements() {
         std::vector<std::unique_ptr<Identifier>> names;
         std::unique_ptr<Expression> value;
 
-        if (!expectPeek(IDENT, "Expected identifier in declaration.")) {
+        if (!customExpectPeek("Expected identifier in declaration.", IDENT)) {
+            while (peekToken.Type != NEWLINE) {
+                nextToken();
+            }
             return {};
         }
         names.push_back(std::make_unique<Identifier>(curToken, curToken.Literal));
@@ -276,7 +282,7 @@ std::unique_ptr<BlockStatement> Parser::parseBlockStatement() {
     nextToken();
 
     while (!(curTokenIs(END) 
-        && (peekTokenIs(IF, ELSE, FUNCTION))) // ... END (IF || ELSE || FUNCTION)
+        && (peekTokenIs(IF, ELSE, FUNCTION, WHILE))) // ... END (IF || ELSE || FUNCTION || WHILE)
         && !curTokenIs(EOF_TOKEN)) { 
         auto stmt = parseStatement();   
         if (stmt != nullptr) {
@@ -285,8 +291,9 @@ std::unique_ptr<BlockStatement> Parser::parseBlockStatement() {
         nextToken();
     }
 
+    // TODO: Need to check for matching checksums 
     if (curTokenIs(END)) { // Advance tokens by two to account for positioning. Adjust later if needed.
-        nextToken();
+        nextToken(); 
         nextToken();
     }
     return block;
@@ -562,7 +569,8 @@ std::unique_ptr<Expression> Parser::parseIfExpression() {
             return nullptr;
         }
 
-        if (!expectPeek(ELSE)) {
+        //if (!expectPeek(ELSE)) {
+        if (!expectPeek(IF)) {
             std::cerr << expression->TokenLiteral() << std::endl;
             std::cerr << "Failed to find ELSE, peekToken: " << peekToken.Type << std::endl;
             return nullptr;
@@ -574,6 +582,50 @@ std::unique_ptr<Expression> Parser::parseIfExpression() {
     //// Set flags to true as it's done parsing the entire control flow.
     //isFirstIfExpression = true; 
     //isFirstElseExpression = true;
+
+    return expression;
+}
+
+std::unique_ptr<Expression> Parser::parseWhileExpression() {
+    Tracer tracer("parseWhileExpression");
+
+    auto token = curToken;
+    auto expression = std::make_unique<WhileExpression>(token);
+
+    if (!expectPeek(LPAREN)) {
+        std::cerr << expression->TokenLiteral() << std::endl;
+        std::cerr << "Failed to find LPAREN, peekToken: " << peekToken.Type << std::endl;
+        return nullptr;
+    }
+
+    nextToken();
+    expression->Condition = parseExpression(Precedence::LOWEST);
+
+    if (!expectPeek(RPAREN)) {
+        std::cerr << expression->TokenLiteral() << std::endl;
+        std::cerr << "Failed to find RPAREN, peekToken: " << peekToken.Type << std::endl;
+        return nullptr;
+    }
+
+    if (!expectPeek(NEWLINE)) {
+        std::cerr << expression->TokenLiteral() << std::endl;
+        std::cerr << "Failed to find NEWLINE, peekToken: " << peekToken.Type << std::endl;
+        return nullptr;
+    }
+
+    if (!expectPeek(BEGIN)) {
+        std::cerr << expression->TokenLiteral() << std::endl;
+        std::cerr << "Failed to find BEGIN, peekToken: " << peekToken.Type << std::endl;
+        return nullptr;
+    }
+
+    if (!expectPeek(WHILE)) {
+        std::cerr << expression->TokenLiteral() << std::endl;
+        std::cerr << "Failed to find IF, peekToken: " << peekToken.Type << std::endl;
+        return nullptr;
+    }
+
+    expression->Body = parseBlockStatement();
 
     return expression;
 }
@@ -690,22 +742,37 @@ std::unique_ptr<Expression> Parser::parseAssignExpression(std::unique_ptr<Expres
     
     nextToken(); // Consume ASSIGN
 
+    bool identStage = true, assignStage = false; // Start expecting an identifier after an assignment
 
-    //std::cout << "Parsed token: " << curToken.Literal << std::endl;
-    ////std::cout << "Parsed expression: " << name->String() << std::endl;
-    while (!peekTokenIs(NEWLINE, DOT)) {
-        if (!curTokenIs(IDENT)) { // Consume IDENT
-            return nullptr;
+    while (true) {        
+        if (identStage) {
+            if (curTokenIs(IDENT) && !peekTokenIs(NEWLINE, EOF_TOKEN, PLUS, MINUS, ASTERISK, SLASH, AMPERSAND)) {
+                auto nextName = parseIdentifier();
+                assignExp->addName(std::move(nextName)); 
+                identStage = false;
+                assignStage = true; 
+            }
+            else if (peekTokenIs(NEWLINE, EOF_TOKEN, PLUS, MINUS, ASTERISK, SLASH, AMPERSAND)) {
+                // Reached expression part
+                break;
+            }
+            else {
+                // If we don't find an identifier when we expect one, it's an error
+                return nullptr;
+            }
         }
-        else {
-            std::unique_ptr<Expression> exp = parseIdentifier();
-            assignExp->addName(std::move(exp)); // Add IDENT to AssignExpression
+        else if (assignStage) {
+            if (curTokenIs(ASSIGN)) {
+                // Continue parsing, switch back to identifier stage
+                identStage = true;
+                assignStage = false;
+            }
+            else {
+                return nullptr;
+            }
         }
-        nextToken();
 
-        if (!curTokenIs(ASSIGN)) { // Consume ASSIGN
-            return nullptr;
-        }
+        // Move to the next token to check
         nextToken();
     }
 
@@ -772,7 +839,7 @@ bool Parser::expectPeek(TokenTypes... types) {
         return true;
     }
     else {
-        std::string expectedTypes = "";
+        std::string expectedTypes = "Invalid identifier/literal";
         peekError(expectedTypes);
         return false;
     }
@@ -813,14 +880,17 @@ std::vector<std::string> Parser::Errors() const {
 }
 
 void Parser::peekError(const TokenType& expected) {
-    std::string msg = "Error on line " + std::to_string(currentLine) + ": Expected next token to be " +
+    //std::string msg = "Error on line " + std::to_string(currentLine) + ": Expected next token to be " +
+    //    std::string(expected) + ", got " + std::string(peekToken.Type) + " instead.";
+    std::string msg = "Error: Expected next token to be " +
         std::string(expected) + ", got " + std::string(peekToken.Type) + " instead.";
     errors.push_back(msg);
 }
 
 
 void Parser::peekError(const std::string& message) {
-    errors.push_back("Error on line " + std::to_string(currentLine) + ": " + message);
+    //errors.push_back("Error on line " + std::to_string(currentLine) + ": " + message);
+    errors.push_back("Error: " + message);
 }
 
 

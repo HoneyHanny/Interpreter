@@ -573,6 +573,60 @@ void TestIfExpression() {
     std::cout << "TestIfStatement passed." << std::endl;
 }
 
+void TestWhileExpression() {
+    std::string input = R"(
+    WHILE(x < y)
+        BEGIN WHILE
+            x
+        END WHILE)";
+    auto lexer = std::make_unique<Lexer>(input);
+    Parser parser(std::move(lexer));
+    auto program = parser.ParseProgram();
+    checkParserErrors(parser); // Implement this based on your error handling
+
+    if (program->Statements.size() != 1) {
+        std::cerr << "Program does not contain 1 statement. Got=" << program->Statements.size() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
+    if (!stmt) {
+        std::cerr << "Program's first statement is not ExpressionStatement." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    std::cout << stmt->Expression_.get()->String() << std::endl;
+
+    auto exp = dynamic_cast<WhileExpression*>(stmt->Expression_.get());
+    if (!exp) {
+        std::cerr << "Statement's expression is not WhileExpression." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (!testInfixExpression(exp->Condition, "x", "<", "y")) {
+        std::cerr << "Condition test failed." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (exp->Body->Statements.size() != 1) {
+        std::cerr << "Body does not contain 1 statement. Got=" << exp->Body->Statements.size() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto bodyStmt = dynamic_cast<ExpressionStatement*>(exp->Body->Statements[0].get());
+    if (!bodyStmt) {
+        std::cerr << "Body's first statement is not ExpressionStatement." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if (!testIdentifier(bodyStmt->Expression_, "x")) {
+        std::cerr << "Identifier test failed." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    std::cout << "TestWhileExpression passed." << std::endl;
+}
+
 
 void TestNestedIfExpression() {
     std::string input = R"(

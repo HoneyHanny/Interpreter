@@ -139,7 +139,8 @@ static void handleArgs(std::ostringstream& os, T&& firstArg, Args&&... args) {
 
 template<typename... Args>
 static void formatMessage(std::ostringstream& message, int line, const std::string& format, Args... args) {
-    message << "Error on line " << line << ": " << format;
+    //message << "Error on line " << line << ": " << format;
+    message << "Error: " << format;
     handleArgs(message, std::forward<Args>(args)...);
 }
 
@@ -302,35 +303,75 @@ static std::shared_ptr<Object> evalFloatInfixExpression(
     return std::make_shared<ErrorObject>("unknown operator: " + left->Type() + " " + operator_ + " " + right->Type());
 }
 
+//static std::shared_ptr<Object> evalStringInfixExpression(
+//    const std::string& operator_,
+//    std::shared_ptr<Object> left,
+//    std::shared_ptr<Object> right) {
+//
+//    std::string leftVal;
+//    if (left->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ)) {
+//        leftVal = dynamic_cast<String*>(left.get())->Value;
+//    }
+//    else if (left->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ)) {
+//        leftVal = std::string(1, dynamic_cast<Char*>(left.get())->Value);
+//    }
+//    else {
+//        return std::make_shared<ErrorObject>("left-hand operand of & must be a string or char, got " + left->Type());
+//    }
+//
+//    std::string rightVal;
+//    if (right->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ)) {
+//        rightVal = dynamic_cast<String*>(right.get())->Value;
+//    }
+//    else if (right->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ)) {
+//        rightVal = std::string(1, dynamic_cast<Char*>(right.get())->Value);
+//    }
+//    else {
+//        return std::make_shared<ErrorObject>("right-hand operand of & must be a string or char, got " + right->Type());
+//    }
+//
+//    if (operator_ == "&") {
+//        return std::make_shared<String>(leftVal + rightVal);
+//    }
+//    return std::make_shared<ErrorObject>("unknown operator: " + operator_ + " for types " + left->Type() + " and " + right->Type());
+//}
+
 static std::shared_ptr<Object> evalStringInfixExpression(
     const std::string& operator_,
     std::shared_ptr<Object> left,
     std::shared_ptr<Object> right) {
 
-    std::string leftVal;
-    if (left->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ)) {
-        leftVal = dynamic_cast<String*>(left.get())->Value;
-    }
-    else if (left->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ)) {
-        leftVal = std::string(1, dynamic_cast<Char*>(left.get())->Value);
-    }
-    else {
-        return std::make_shared<ErrorObject>("left-hand operand of & must be a string or char, got " + left->Type());
-    }
+    auto objectToString = [](const std::shared_ptr<Object>& obj) -> std::string {
+        if (auto str = dynamic_cast<String*>(obj.get())) {
+            return str->Value;
+        }
+        else if (auto ch = dynamic_cast<Char*>(obj.get())) {
+            return std::string(1, ch->Value);
+        }
+        else if (auto num = dynamic_cast<IntegerObject*>(obj.get())) {
+            return std::to_string(num->Value);
+        }
+        else if (auto flt = dynamic_cast<FloatObject*>(obj.get())) {
+            return std::to_string(flt->Value);
+        }
+        else if (auto bol = dynamic_cast<BooleanObject*>(obj.get())) {
+            return bol->Value ? "TRUE" : "FALSE";
+        }
+        else {
+            throw std::runtime_error("Unsupported type for string concatenation.");
+        }
+        };
 
-    std::string rightVal;
-    if (right->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ)) {
-        rightVal = dynamic_cast<String*>(right.get())->Value;
-    }
-    else if (right->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ)) {
-        rightVal = std::string(1, dynamic_cast<Char*>(right.get())->Value);
-    }
-    else {
-        return std::make_shared<ErrorObject>("right-hand operand of & must be a string or char, got " + right->Type());
-    }
+    try {
+        std::string leftVal = objectToString(left);
+        std::string rightVal = objectToString(right);
 
-    if (operator_ == "&") {
-        return std::make_shared<String>(leftVal + rightVal);
+        if (operator_ == "&") {
+            return std::make_shared<String>(leftVal + rightVal);
+        }
+    }
+    catch (const std::runtime_error& e) {
+        return std::make_shared<ErrorObject>(e.what());
     }
     return std::make_shared<ErrorObject>("unknown operator: " + operator_ + " for types " + left->Type() + " and " + right->Type());
 }
@@ -389,13 +430,14 @@ static std::shared_ptr<Object> evalInfixExpression(
     std::shared_ptr<Object> left,
     std::shared_ptr<Object> right) {
 
+    //std::cout << "Infix" << std::endl;
 
     if (left->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ) && 
         right->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ)) {
         return evalIntegerInfixExpression(operator_, std::move(left), std::move(right));
     }
     // Int | Float vs Float
-    if ((left->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ) &&
+    else if ((left->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ) &&
         right->Type() == ObjectTypeToString(ObjectType_::FLOAT_OBJ)) ||
         (left->Type() == ObjectTypeToString(ObjectType_::FLOAT_OBJ) &&
             right->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ)) ||
@@ -403,14 +445,31 @@ static std::shared_ptr<Object> evalInfixExpression(
             right->Type() == ObjectTypeToString(ObjectType_::FLOAT_OBJ))) {
         return evalFloatInfixExpression(operator_, std::move(left), std::move(right));
     }
-    // String vs String | Char
+    //// String vs String | Char
+    //else if (
+    //    (left->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ) &&
+    //        (right->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ) ||
+    //        right->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ))) ||
+    //    (left->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ) &&
+    //        (right->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ) ||
+    //        right->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ)))
+    //    ) {
+    //    return evalStringInfixExpression(operator_, std::move(left), std::move(right));
+    //}
+    // String vs Any Primitive Type
     else if (
-        (left->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ) &&
-            (right->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ) ||
-            right->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ))) ||
-        (left->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ) &&
-            (right->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ) ||
-            right->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ)))
+        (left->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ) ||
+            left->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ)) &&
+        (right->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ) ||
+            right->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ) ||
+            right->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ) ||
+            right->Type() == ObjectTypeToString(ObjectType_::FLOAT_OBJ) ||
+            right->Type() == ObjectTypeToString(ObjectType_::BOOLEAN_OBJ)) ||
+        (right->Type() == ObjectTypeToString(ObjectType_::STRING_OBJ) ||
+            right->Type() == ObjectTypeToString(ObjectType_::CHAR_OBJ)) &&
+        (left->Type() == ObjectTypeToString(ObjectType_::INTEGER_OBJ) ||
+            left->Type() == ObjectTypeToString(ObjectType_::FLOAT_OBJ) ||
+            left->Type() == ObjectTypeToString(ObjectType_::BOOLEAN_OBJ))
         ) {
         return evalStringInfixExpression(operator_, std::move(left), std::move(right));
     }
@@ -485,6 +544,36 @@ static std::shared_ptr<Object> evalIfExpression(const IfExpression* ie, const st
     }
 }
 
+static std::shared_ptr<Object> evalWhileExpression(const WhileExpression* we, const std::shared_ptr<Environment>& env) {
+
+    while (true) {
+        auto loopEnv = std::make_shared<Environment>(env);
+
+        auto condition = Eval(we->Condition.get(), loopEnv);
+        if (isError(condition)) {
+            return condition;
+        }
+
+        // Break if condition is false
+        if (!isTruthy(condition)) {
+            break; 
+        }
+
+        // Evaluate the loop body 
+        auto result = Eval(we->Body.get(), loopEnv); 
+        if (isError(result)) {
+            return result;
+        }
+
+        loopEnv.reset();
+
+        // TODO: Maybe implement a break
+    }
+
+    return std::make_shared<NullObject>(); 
+}
+
+
 static std::shared_ptr<Object> evalBlockStatement(const BlockStatement* block, const std::shared_ptr<Environment>& env) {
     std::shared_ptr<Object> result = nullptr;
 
@@ -552,7 +641,7 @@ static std::shared_ptr<Object> unwrapReturnValue(std::shared_ptr<Object>& obj) {
     return obj;
 }
 
-std::shared_ptr<Object> applyFunction(std::shared_ptr<Object>& fn, const std::vector<std::shared_ptr<Object>>& args, std::shared_ptr<Environment> env) {
+static std::shared_ptr<Object> applyFunction(std::shared_ptr<Object>& fn, const std::vector<std::shared_ptr<Object>>& args, std::shared_ptr<Environment> env) {
     if (auto function = std::dynamic_pointer_cast<Function>(fn)) {
         auto extendedEnv = extendFunctionEnv(*function, args);
         auto evaluated = Eval(function->Body.get(), extendedEnv);
@@ -620,10 +709,12 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
     }
     else if (auto infixExpr = dynamic_cast<const InfixExpression*>(node)) {
         auto left = Eval(infixExpr->Left.get(), env);
+        //std::cout << left->Inspect() << std::endl;
         if (isError(left)) {
             return left;
         }
         auto right = Eval(infixExpr->Right.get(), env);
+        //std::cout << right->Inspect() << std::endl;
         if (isError(right)) {
             return right;
         }
@@ -634,6 +725,9 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
     }
     else if (auto ifExpr = dynamic_cast<const IfExpression*>(node)) {
         return evalIfExpression(ifExpr, env);
+    }
+    else if (auto whileExpr = dynamic_cast<const WhileExpression*>(node)) {
+        return evalWhileExpression(whileExpr, env);
     }
     else if (const auto* returnStmt = dynamic_cast<const ReturnStatement*>(node)) {
         auto val = Eval(returnStmt->ReturnValue.get(), env);
@@ -731,7 +825,6 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
         if (assignExpr->names.empty()) {
             return newError("Assignment without a variable name.");
         }
-
         auto value = Eval(assignExpr->value.get(), env);
         if (isError(value)) {
             return value;
@@ -764,7 +857,8 @@ std::shared_ptr<Object> Eval(const Node* node, const std::shared_ptr<Environment
             }
 
             // If types match, or no type information is required, set the new value
-            env->Set(identifier, Token("", ""), value);
+            //env->Set(identifier, Token("", ""), value);
+            env->Set(identifier, expectedType, value);
         }
         return value;
     }

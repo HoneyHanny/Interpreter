@@ -79,6 +79,7 @@ public:
     std::unique_ptr<Expression> parseBoolean();
     std::unique_ptr<Expression> parseGroupedExpression();
     std::unique_ptr<Expression> parseIfExpression();
+    std::unique_ptr<Expression> parseWhileExpression();
     std::unique_ptr<Expression> parseFunctionLiteral(Token fnToken, std::unique_ptr<Expression> CallName);
     std::unique_ptr<Expression> parseCallExpression(std::unique_ptr<Expression> function);
     std::vector<std::unique_ptr<Expression>> parseCallArguments();
@@ -187,6 +188,10 @@ private:
         registerPrefix(IF, [this]() -> std::unique_ptr<Expression> {
             return this->parseIfExpression();
         }); 
+
+        registerPrefix(WHILE, [this]() -> std::unique_ptr<Expression> {
+            return this->parseWhileExpression();
+        });
 
         registerPrefix(FUNCTION, [this]() -> std::unique_ptr<Expression> {
             currentParsedType = {FUNCTION, "FUNCTION"};

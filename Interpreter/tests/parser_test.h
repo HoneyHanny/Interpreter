@@ -19,6 +19,7 @@ void TestParsingInfixExpressions();
 void TestOperatorPrecedenceParsing();
 void TestBooleanExpression();
 void TestIfExpression();
+void TestWhileExpression();
 void TestNestedIfInElseExpression();
 void TestNestedIfExpression();
 void TestIfElseExpression();

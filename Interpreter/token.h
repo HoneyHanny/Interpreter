@@ -66,6 +66,7 @@ constexpr TokenType IF = "IF";
 constexpr TokenType ELSE = "ELSE";
 //constexpr TokenType DISPLAY = "DISPLAY";
 constexpr TokenType RETURN = "RETURN";
+constexpr TokenType WHILE = "WHILE";
 constexpr TokenType STRING_LITERAL = "STRING_LITERAL";
 constexpr TokenType CHAR_LITERAL = "CHAR_LITERAL";
 

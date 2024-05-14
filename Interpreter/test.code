@@ -1,5 +1,9 @@
 BEGIN CODE
-	FLOAT x = 1.0, z = 1, y = 2.0
-	x = 2.0
-	DISPLAY: y 
+	INT x = 0
+	WHILE (x < 5)
+	BEGIN WHILE
+		DISPLAY: x
+		x = x + 1
+	END WHILE
+	DISPLAY: x
 END CODE
