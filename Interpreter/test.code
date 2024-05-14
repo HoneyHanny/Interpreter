@@ -1,9 +1,17 @@
 BEGIN CODE
-	INT x = 0
+	INT x = 0, y = 0
 	WHILE (x < 5)
 	BEGIN WHILE
-		DISPLAY: x
+		DISPLAY: "-" & x
 		x = x + 1
+
+		WHILE (y < 5)
+		BEGIN WHILE
+			DISPLAY: "--" & y
+			y = y + 1
+		END WHILE
+
+		y = 0
 	END WHILE
 	DISPLAY: x
 END CODE

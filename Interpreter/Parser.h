@@ -11,6 +11,7 @@
 
 enum class Precedence : int {
     LOWEST = 1,
+    CONCATENATE, // & (concatenate two strings)
     EQUALS,      // == 
     LESSGREATER, // > or <
     SUM,         // + 
@@ -123,11 +124,11 @@ public:
     void registerInfix(TokenType type, infixParseFn fn);
 
     std::unordered_map<TokenType, Precedence> precedences = {
+        {AMPERSAND, Precedence::CONCATENATE},
         {EQ, Precedence::EQUALS},
         {NEQ, Precedence::EQUALS},
         {LT, Precedence::LESSGREATER},
-        {GT, Precedence::LESSGREATER},
-        {AMPERSAND, Precedence::SUM},
+        {GT, Precedence::LESSGREATER}, 
         {PLUS, Precedence::SUM},
         {MINUS, Precedence::SUM},
         {SLASH, Precedence::PRODUCT},
