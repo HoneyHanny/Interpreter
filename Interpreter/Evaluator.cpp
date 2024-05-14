@@ -525,24 +525,31 @@ static bool isTruthy(const std::shared_ptr<Object>& obj) {
 }
 
 static std::shared_ptr<Object> evalIfExpression(const IfExpression* ie, const std::shared_ptr<Environment>& env) {
-    auto condition = Eval(ie->Condition.get(), env);
-    if (isError(condition)) {
-        return condition;
+    // Iterate over each condition and block pair
+    for (const auto& branch : ie->Branches) {
+        auto condition = Eval(branch.first.get(), env);
+        if (isError(condition)) {
+            return condition;
+        }
+
+        incrementEvaluatorLine();
+        if (isTruthy(condition)) {
+            // If the condition is true, evaluate the corresponding consequence block
+            return Eval(branch.second.get(), env);
+        }
     }
 
-    incrementEvaluatorLine();
-    if (isTruthy(condition)) {
-        return Eval(ie->Consequence.get(), env);
-    }
-    else if (ie->Alternative) {
+    // If no condition is true and there is an alternative block, evaluate it
+    if (ie->Alternative) {
         incrementEvaluatorLine();
         return Eval(ie->Alternative.get(), env);
     }
-    else {
-        incrementEvaluatorLine();
-        return std::make_unique<NullObject>();
-    }
+
+    // If no condition is true and there is no alternative block, return NullObject
+    incrementEvaluatorLine();
+    return std::make_shared<NullObject>();
 }
+
 
 static std::shared_ptr<Object> evalWhileExpression(const WhileExpression* we, const std::shared_ptr<Environment>& env) {
 

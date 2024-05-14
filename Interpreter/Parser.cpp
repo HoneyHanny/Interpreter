@@ -499,20 +499,6 @@ std::unique_ptr<Expression> Parser::parseGroupedExpression() {
 
 std::unique_ptr<Expression> Parser::parseIfExpression() {
     Tracer tracer("parseIfExpression");
-    //// Flag guards
-    //if (!isFirstIfExpression) {
-    //    // Skip parsing this IF expression if it's done parsing the original expression.
-    //    std::cerr << "Skipping IF expression as it's not the first." << std::endl;
-    //    return nullptr;
-    //}
-
-    //if (!isFirstElseExpression) {
-    //    // Skip parsing this IF expression if it's done parsing the original expression.
-    //    std::cerr << "Skipping ELSE expression as it's not the first." << std::endl;
-    //    return nullptr;
-    //}
-
-    //isFirstIfExpression = false; // Set flag to false so that it skips other IFs
 
     auto token = curToken; 
     auto expression = std::make_unique<IfExpression>(token);
@@ -524,7 +510,9 @@ std::unique_ptr<Expression> Parser::parseIfExpression() {
     }
 
     nextToken();
-    expression->Condition = parseExpression(Precedence::LOWEST);
+
+    //expression->Condition = parseExpression(Precedence::LOWEST);
+    auto ifCondition = parseExpression(Precedence::LOWEST);
 
     if (!expectPeek(RPAREN)) {
         std::cerr << expression->TokenLiteral() << std::endl;
@@ -550,38 +538,84 @@ std::unique_ptr<Expression> Parser::parseIfExpression() {
         return nullptr;
     }
 
-    expression->Consequence = parseBlockStatement();
+    //expression->Consequence = parseBlockStatement();
+    auto ifConsequence = parseBlockStatement();
+
+    // Push Branch
+    expression->Branches.push_back(std::make_pair(std::move(ifCondition), std::move(ifConsequence)));
 
     // Check for an 'else' part
-    if (peekTokenIs(ELSE)) {
+    while (peekTokenIs(ELSE)) {
+        nextToken(); // CONSUME ELSE
 
-        nextToken();
+        // ELSE IF
+        if (peekTokenIs(IF)) {
+            nextToken(); // CONSUME IF
 
-        if (!expectPeek(NEWLINE)) {
-            std::cerr << expression->TokenLiteral() << std::endl;
-            std::cerr << "Failed to find NEWLINE, peekToken: " << peekToken.Type << std::endl;
-            return nullptr;
+            if (!expectPeek(LPAREN)) {
+                std::cerr << expression->TokenLiteral() << std::endl;
+                std::cerr << "Failed to find LPAREN, peekToken: " << peekToken.Type << std::endl;
+                return nullptr;
+            }
+
+            nextToken();
+
+            //std::pair<std::unique_ptr<Expression>, std::unique_ptr<BlockStatement>> elseIfBranch;
+            auto elseIfCondition = parseExpression(Precedence::LOWEST);
+
+            if (!expectPeek(RPAREN)) {
+                std::cerr << expression->TokenLiteral() << std::endl;
+                std::cerr << "Failed to find RPAREN, peekToken: " << peekToken.Type << std::endl;
+                return nullptr;
+            }
+
+            if (!expectPeek(NEWLINE)) {
+                std::cerr << expression->TokenLiteral() << std::endl;
+                std::cerr << "Failed to find NEWLINE, peekToken: " << peekToken.Type << std::endl;
+                return nullptr;
+            }
+
+            if (!expectPeek(BEGIN)) {
+                std::cerr << expression->TokenLiteral() << std::endl;
+                std::cerr << "Failed to find BEGIN, peekToken: " << peekToken.Type << std::endl;
+                return nullptr;
+            }
+
+            if (!expectPeek(IF)) {
+                std::cerr << expression->TokenLiteral() << std::endl;
+                std::cerr << "Failed to find ELSE, peekToken: " << peekToken.Type << std::endl;
+                return nullptr;
+            }
+
+            auto elseIfConsequence = parseBlockStatement();
+            
+            expression->Branches.push_back(std::make_pair(std::move(elseIfCondition), std::move(elseIfConsequence)));
         }
 
-        if (!expectPeek(BEGIN)) {
-            std::cerr << expression->TokenLiteral() << std::endl;
-            std::cerr << "Failed to find BEGIN, peekToken: " << peekToken.Type << std::endl;
-            return nullptr;
-        }
+        // ELSE
+        else {
+            if (!expectPeek(NEWLINE)) {
+                std::cerr << expression->TokenLiteral() << std::endl;
+                std::cerr << "Failed to find NEWLINE, peekToken: " << peekToken.Type << std::endl;
+                return nullptr;
+            }
 
-        //if (!expectPeek(ELSE)) {
-        if (!expectPeek(IF)) {
-            std::cerr << expression->TokenLiteral() << std::endl;
-            std::cerr << "Failed to find ELSE, peekToken: " << peekToken.Type << std::endl;
-            return nullptr;
-        }
+            if (!expectPeek(BEGIN)) {
+                std::cerr << expression->TokenLiteral() << std::endl;
+                std::cerr << "Failed to find BEGIN, peekToken: " << peekToken.Type << std::endl;
+                return nullptr;
+            }
 
-        expression->Alternative = parseBlockStatement();
+            //if (!expectPeek(ELSE)) {
+            if (!expectPeek(IF)) {
+                std::cerr << expression->TokenLiteral() << std::endl;
+                std::cerr << "Failed to find ELSE, peekToken: " << peekToken.Type << std::endl;
+                return nullptr;
+            }
+
+            expression->Alternative = parseBlockStatement();
+        }
     }
-
-    //// Set flags to true as it's done parsing the entire control flow.
-    //isFirstIfExpression = true; 
-    //isFirstElseExpression = true;
 
     return expression;
 }

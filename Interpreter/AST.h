@@ -484,11 +484,55 @@ public:
     }
 };
 
+//class IfExpression : public Expression {
+//public:
+//    Token token; 
+//    std::unique_ptr<Expression> Condition;
+//    std::unique_ptr<BlockStatement> Consequence;
+//    std::unique_ptr<BlockStatement> Alternative;
+//
+//    IfExpression(const Token& tok) : token(tok) {}
+//
+//    void expressionNode() override {}
+//
+//    std::string TokenLiteral() const override {
+//        return token.Literal;
+//    }
+//
+//    std::string String() const override {
+//        std::ostringstream out;
+//        out << "IF ";
+//        out << Condition->String();
+//        out << "\nBEGIN IF\n";
+//        out << Consequence->String();
+//        out << "\nEND IF";
+//
+//        if (Alternative) {
+//            out << "ELSE " << Alternative->String();
+//        }
+//
+//        return out.str();
+//    }
+//
+//    std::unique_ptr<Expression> clone() const override {
+//        auto clonedCondition = std::unique_ptr<Expression>(static_cast<Expression*>(Condition->clone().release()));
+//        auto clonedConsequence = std::unique_ptr<BlockStatement>(static_cast<BlockStatement*>(Consequence->clone().release()));
+//        auto clonedAlternative = Alternative ? std::unique_ptr<BlockStatement>(static_cast<BlockStatement*>(Alternative->clone().release())) : nullptr;
+//
+//        auto clonedIfExpr = std::make_unique<IfExpression>(token);
+//        clonedIfExpr->Condition = std::move(clonedCondition);
+//        clonedIfExpr->Consequence = std::move(clonedConsequence);
+//        clonedIfExpr->Alternative = std::move(clonedAlternative);
+//
+//        return clonedIfExpr;
+//    }
+//};
+
 class IfExpression : public Expression {
 public:
-    Token token; 
-    std::unique_ptr<Expression> Condition;
-    std::unique_ptr<BlockStatement> Consequence;
+    Token token;
+    // Using 'Branches' to represent the conditional execution paths
+    std::vector<std::pair<std::unique_ptr<Expression>, std::unique_ptr<BlockStatement>>> Branches;
     std::unique_ptr<BlockStatement> Alternative;
 
     IfExpression(const Token& tok) : token(tok) {}
@@ -502,27 +546,39 @@ public:
     std::string String() const override {
         std::ostringstream out;
         out << "IF ";
-        out << Condition->String();
+        if (!Branches.empty()) {
+            for (const auto& branch : Branches) {
+                out << branch.first->String();
+                out << "\nBEGIN IF\n";
+                out << branch.second->String();
+                out << "\nEND IF\n";
+                out << "ELSE ";
+            }
+        }
         out << "\nBEGIN IF\n";
-        out << Consequence->String();
+        out << Branches.back().second->String(); // Ensure to handle the case where there is no ELSE IF
         out << "\nEND IF";
 
         if (Alternative) {
-            out << "ELSE " << Alternative->String();
+            out << "ELSE\n";
+            out << Alternative->String();
         }
 
         return out.str();
     }
 
     std::unique_ptr<Expression> clone() const override {
-        auto clonedCondition = std::unique_ptr<Expression>(static_cast<Expression*>(Condition->clone().release()));
-        auto clonedConsequence = std::unique_ptr<BlockStatement>(static_cast<BlockStatement*>(Consequence->clone().release()));
-        auto clonedAlternative = Alternative ? std::unique_ptr<BlockStatement>(static_cast<BlockStatement*>(Alternative->clone().release())) : nullptr;
-
         auto clonedIfExpr = std::make_unique<IfExpression>(token);
-        clonedIfExpr->Condition = std::move(clonedCondition);
-        clonedIfExpr->Consequence = std::move(clonedConsequence);
-        clonedIfExpr->Alternative = std::move(clonedAlternative);
+        for (const auto& branch : Branches) {
+            auto clonedExpr = branch.first ? std::unique_ptr<Expression>(static_cast<Expression*>(branch.first->clone().release())) : nullptr;
+            auto clonedBlock = branch.second ? std::unique_ptr<BlockStatement>(static_cast<BlockStatement*>(branch.second->clone().release())) : nullptr;
+
+            clonedIfExpr->Branches.emplace_back(std::move(clonedExpr), std::move(clonedBlock));
+        }
+
+        if (Alternative) {
+            clonedIfExpr->Alternative = std::unique_ptr<BlockStatement>(static_cast<BlockStatement*>(Alternative->clone().release()));
+        }
 
         return clonedIfExpr;
     }

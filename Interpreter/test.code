@@ -1,17 +1,16 @@
 BEGIN CODE
-	INT x = 0, y = 0
-	WHILE (x < 5)
-	BEGIN WHILE
-		DISPLAY: "-" & x
-		x = x + 1
+	INT x = 4
 
-		WHILE (y < 5)
-		BEGIN WHILE
-			DISPLAY: "--" & y
-			y = y + 1
-		END WHILE
-
-		y = 0
-	END WHILE
-	DISPLAY: x
+	IF (x == 0)
+	BEGIN IF
+		DISPLAY: "FIRST"
+	END IF
+	ELSE IF (x == 1)
+	BEGIN IF
+		DISPLAY: "SECOND"
+	END IF
+	ELSE 
+	BEGIN IF
+		DISPLAY: "THIRD"
+	END IF
 END CODE

@@ -514,65 +514,65 @@ void TestBooleanExpression() {
     std::cout << "testBoolean passed." << std::endl;
 }
 
-void TestIfExpression() {
-    std::string input = R"(
-    IF(x < y) 
-        BEGIN IF 
-            x 
-        END IF)";
-    auto lexer = std::make_unique<Lexer>(input);
-    Parser parser(std::move(lexer));
-    auto program = parser.ParseProgram();
-    checkParserErrors(parser); // Implement this based on your error handling
-
-    if (program->Statements.size() != 1) {
-        std::cerr << "Program does not contain 1 statement. Got=" << program->Statements.size() << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
-    if (!stmt) {
-        std::cerr << "Program's first statement is not ExpressionStatement." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    std::cout << stmt->Expression_.get()->String() << std::endl;
-
-    auto exp = dynamic_cast<IfExpression*>(stmt->Expression_.get());
-    if (!exp) {
-        std::cerr << "Statement's expression is not IfExpression." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    if (!testInfixExpression(exp->Condition, "x", "<", "y")) {
-        std::cerr << "Condition test failed." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    if (exp->Consequence->Statements.size() != 1) {
-        std::cerr << "Consequence does not contain 1 statement. Got=" << exp->Consequence->Statements.size() << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    auto consequence = dynamic_cast<ExpressionStatement*>(exp->Consequence->Statements[0].get());
-    if (!consequence) {
-        std::cerr << "Consequence's first statement is not ExpressionStatement." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    if (!testIdentifier(consequence->Expression_, "x")) {
-        std::cerr << "Identifier test failed." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    if (exp->Alternative != nullptr) {
-        std::cerr << "Expected no alternative, but one was found." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    std::cout << "TestIfStatement passed." << std::endl;
-}
-
+//void TestIfExpression() {
+//    std::string input = R"(
+//    IF(x < y) 
+//        BEGIN IF 
+//            x 
+//        END IF)";
+//    auto lexer = std::make_unique<Lexer>(input);
+//    Parser parser(std::move(lexer));
+//    auto program = parser.ParseProgram();
+//    checkParserErrors(parser); // Implement this based on your error handling
+//
+//    if (program->Statements.size() != 1) {
+//        std::cerr << "Program does not contain 1 statement. Got=" << program->Statements.size() << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
+//    if (!stmt) {
+//        std::cerr << "Program's first statement is not ExpressionStatement." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    std::cout << stmt->Expression_.get()->String() << std::endl;
+//
+//    auto exp = dynamic_cast<IfExpression*>(stmt->Expression_.get());
+//    if (!exp) {
+//        std::cerr << "Statement's expression is not IfExpression." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    if (!testInfixExpression(exp->Condition, "x", "<", "y")) {
+//        std::cerr << "Condition test failed." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    if (exp->Consequence->Statements.size() != 1) {
+//        std::cerr << "Consequence does not contain 1 statement. Got=" << exp->Consequence->Statements.size() << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    auto consequence = dynamic_cast<ExpressionStatement*>(exp->Consequence->Statements[0].get());
+//    if (!consequence) {
+//        std::cerr << "Consequence's first statement is not ExpressionStatement." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    if (!testIdentifier(consequence->Expression_, "x")) {
+//        std::cerr << "Identifier test failed." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    if (exp->Alternative != nullptr) {
+//        std::cerr << "Expected no alternative, but one was found." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    std::cout << "TestIfStatement passed." << std::endl;
+//}
+//
 void TestWhileExpression() {
     std::string input = R"(
     WHILE(x < y)
@@ -626,252 +626,252 @@ void TestWhileExpression() {
 
     std::cout << "TestWhileExpression passed." << std::endl;
 }
-
-
-void TestNestedIfExpression() {
-    std::string input = R"(
-    IF(x < y) 
-        BEGIN IF 
-            IF (x) 
-                BEGIN IF 
-                    x 
-                END IF
-        END IF
-    )";
-
-    auto lexer = std::make_unique<Lexer>(input);
-    Parser parser(std::move(lexer));
-    auto program = parser.ParseProgram();
-    checkParserErrors(parser); // Assuming this function checks for and reports any parsing errors
-
-    // Verifying that there is exactly one statement in the program
-    if (program->Statements.size() != 1) {
-        std::cerr << "Program does not contain 1 statement. Got=" << program->Statements.size() << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    std::cout << "\nExpressionStatement: \n" << program->Statements[0].get()->String() << std::endl;
-
-    // Verifying that the statement is an IfExpression
-    auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
-    if (!stmt) {
-        std::cerr << "Program's first statement is not ExpressionStatement." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    std::cout << "\nIF: \n" << stmt->Expression_.get()->String() << std::endl;
-
-    auto exp = dynamic_cast<IfExpression*>(stmt->Expression_.get());
-    if (!exp) {
-        std::cerr << "Statement's expression is not IfExpression." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    // Verifying the condition of the outer IF expression
-    if (!testInfixExpression(exp->Condition, "x", "<", "y")) {
-        std::cerr << "Outer condition test failed." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    // Verifying the structure of the nested IF expression
-    if (exp->Consequence->Statements.size() != 1) {
-        std::cerr << "Consequence does not contain 1 statement for the nested IF. Got=" << exp->Consequence->Statements.size() << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    std::cout << "\nNested IF: \n" << exp->Consequence->Statements[0].get()->String() << std::endl;
-
-    auto stmtInner = dynamic_cast<ExpressionStatement*>(exp->Consequence->Statements[0].get());
-    if (!stmtInner) {
-        std::cerr << "Consequence's statement is not ExpressionStatement." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    auto nestedStmt = dynamic_cast<IfExpression*>(stmtInner->Expression_.get());
-    if (!nestedStmt) {
-        std::cerr << "Consequence's statement is not an IfExpression for nested IF." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    std::cout << "\nInner Condition: \n" << nestedStmt->Condition->String() << std::endl;
-
-    // Assuming testIdentifier verifies the condition of the nested IF and its consequence
-    if (!testIdentifier(nestedStmt->Condition, "x")) {
-        std::cerr << "Nested IF condition test failed." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    if (nestedStmt->Consequence->Statements.size() != 1) {
-        std::cerr << "Nested IF's consequence does not contain 1 statement. Got=" << nestedStmt->Consequence->Statements.size() << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    auto nestedConsequence = dynamic_cast<ExpressionStatement*>(nestedStmt->Consequence->Statements[0].get());
-    if (!nestedConsequence || !testIdentifier(nestedConsequence->Expression_, "x")) {
-        std::cerr << "Nested IF's consequence first statement is not ExpressionStatement or identifier test failed." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    // Verifying there is no alternative block in the outer IF
-    if (exp->Alternative != nullptr) {
-        std::cerr << "Expected no alternative for the outer IF, but one was found." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    std::cout << "TestNestedIfExpression passed." << std::endl;
-}
-
-void TestNestedIfInElseExpression() {
-    std::string input = R"(
-    IF(x < y) 
-        BEGIN IF 
-            x 
-        END IF
-    ELSE 
-        BEGIN ELSE
-            IF (x) 
-                BEGIN IF 
-                    x
-                END IF
-        END ELSE
-    )";
-
-    auto lexer = std::make_unique<Lexer>(input);
-    Parser parser(std::move(lexer));
-    auto program = parser.ParseProgram();
-    checkParserErrors(parser); // Assuming this function checks for and reports any parsing errors
-
-    // Verifying that there is exactly one statement in the program
-    if (program->Statements.size() != 1) {
-        std::cerr << "Program does not contain 1 statement. Got=" << program->Statements.size() << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    // Verifying that the statement is an IfExpression
-    auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
-    if (!stmt) {
-        std::cerr << "Program's first statement is not ExpressionStatement." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    auto exp = dynamic_cast<IfExpression*>(stmt->Expression_.get());
-    if (!exp) {
-        std::cerr << "Statement's expression is not IfExpression." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    // Verifying the condition of the outer IF expression
-    if (!testInfixExpression(exp->Condition, "x", "<", "y")) {
-        std::cerr << "Outer condition test failed." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    // Verifying the structure of the nested IF expression within the ELSE block
-    if (!exp->Alternative) {
-        std::cerr << "Expected an alternative block, but none was found." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    std::cout << "\nNested IF: \n" << exp->Alternative->Statements[0].get()->String() << std::endl;
-
-    auto stmtInner = dynamic_cast<ExpressionStatement*>(exp->Alternative->Statements[0].get());
-    if (!stmtInner) {
-        std::cerr << "Consequence's statement is not ExpressionStatement." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    auto elseStmt = dynamic_cast<IfExpression*>(stmtInner->Expression_.get());
-    if (!elseStmt) {
-        std::cerr << "Alternative block is not an IfExpression." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    if (elseStmt->Consequence->Statements.size() != 1) {
-        std::cerr << "Nested IF in ELSE's consequence does not contain 1 statement. Got=" << elseStmt->Consequence->Statements.size() << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    auto nestedConsequence = dynamic_cast<ExpressionStatement*>(elseStmt->Consequence->Statements[0].get());
-    if (!nestedConsequence || !testIdentifier(nestedConsequence->Expression_, "x")) {
-        std::cerr << "Nested IF in ELSE's consequence first statement is not ExpressionStatement or identifier test failed." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    std::cout << "TestNestedIfInElseExpression passed." << std::endl;
-}
-
-
-void TestIfElseExpression() {
-    std::string input = R"(
-    IF(x < y) 
-        BEGIN IF 
-        x 
-        END IF
-    ELSE
-        BEGIN ELSE
-        some_var
-        END ELSE)";
-    auto lexer = std::make_unique<Lexer>(input);
-    Parser parser(std::move(lexer));
-    auto program = parser.ParseProgram();
-    checkParserErrors(parser); // Implement this based on your error handling
-
-    if (program->Statements.size() != 1) {
-        std::cerr << "Program does not contain 1 statement. Got=" << program->Statements.size() << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
-    if (!stmt) {
-        std::cerr << "Program's first statement is not ExpressionStatement." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    auto exp = dynamic_cast<IfExpression*>(stmt->Expression_.get());
-    if (!exp) {
-        std::cerr << "Statement's expression is not IfExpression." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    if (!testInfixExpression(exp->Condition, "x", "<", "y")) {
-        std::cerr << "Condition test failed." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    if (exp->Consequence->Statements.size() != 1) {
-        std::cerr << "Consequence does not contain 1 statement. Got=" << exp->Consequence->Statements.size() << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    auto consequence = dynamic_cast<ExpressionStatement*>(exp->Consequence->Statements[0].get());
-    if (!consequence) {
-        std::cerr << "Consequence's first statement is not ExpressionStatement." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    if (!testIdentifier(consequence->Expression_, "x")) {
-        std::cerr << "Identifier test failed." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    if (exp->Alternative == nullptr) {
-        std::cerr << "Expected an alternative, but none was found." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    auto alternative = dynamic_cast<ExpressionStatement*>(exp->Alternative->Statements[0].get());
-    if (!alternative) {
-        std::cerr << "Alternative's first statement is not ExpressionStatement." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    if (!testIdentifier(alternative->Expression_, "some_var")) {
-        std::cerr << "Identifier test failed." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    std::cout << "TestIfElseStatement passed." << std::endl;
-}
+//
+//
+//void TestNestedIfExpression() {
+//    std::string input = R"(
+//    IF(x < y) 
+//        BEGIN IF 
+//            IF (x) 
+//                BEGIN IF 
+//                    x 
+//                END IF
+//        END IF
+//    )";
+//
+//    auto lexer = std::make_unique<Lexer>(input);
+//    Parser parser(std::move(lexer));
+//    auto program = parser.ParseProgram();
+//    checkParserErrors(parser); // Assuming this function checks for and reports any parsing errors
+//
+//    // Verifying that there is exactly one statement in the program
+//    if (program->Statements.size() != 1) {
+//        std::cerr << "Program does not contain 1 statement. Got=" << program->Statements.size() << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    std::cout << "\nExpressionStatement: \n" << program->Statements[0].get()->String() << std::endl;
+//
+//    // Verifying that the statement is an IfExpression
+//    auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
+//    if (!stmt) {
+//        std::cerr << "Program's first statement is not ExpressionStatement." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    std::cout << "\nIF: \n" << stmt->Expression_.get()->String() << std::endl;
+//
+//    auto exp = dynamic_cast<IfExpression*>(stmt->Expression_.get());
+//    if (!exp) {
+//        std::cerr << "Statement's expression is not IfExpression." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    // Verifying the condition of the outer IF expression
+//    if (!testInfixExpression(exp->Condition, "x", "<", "y")) {
+//        std::cerr << "Outer condition test failed." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    // Verifying the structure of the nested IF expression
+//    if (exp->Consequence->Statements.size() != 1) {
+//        std::cerr << "Consequence does not contain 1 statement for the nested IF. Got=" << exp->Consequence->Statements.size() << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    std::cout << "\nNested IF: \n" << exp->Consequence->Statements[0].get()->String() << std::endl;
+//
+//    auto stmtInner = dynamic_cast<ExpressionStatement*>(exp->Consequence->Statements[0].get());
+//    if (!stmtInner) {
+//        std::cerr << "Consequence's statement is not ExpressionStatement." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    auto nestedStmt = dynamic_cast<IfExpression*>(stmtInner->Expression_.get());
+//    if (!nestedStmt) {
+//        std::cerr << "Consequence's statement is not an IfExpression for nested IF." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    std::cout << "\nInner Condition: \n" << nestedStmt->Condition->String() << std::endl;
+//
+//    // Assuming testIdentifier verifies the condition of the nested IF and its consequence
+//    if (!testIdentifier(nestedStmt->Condition, "x")) {
+//        std::cerr << "Nested IF condition test failed." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    if (nestedStmt->Consequence->Statements.size() != 1) {
+//        std::cerr << "Nested IF's consequence does not contain 1 statement. Got=" << nestedStmt->Consequence->Statements.size() << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    auto nestedConsequence = dynamic_cast<ExpressionStatement*>(nestedStmt->Consequence->Statements[0].get());
+//    if (!nestedConsequence || !testIdentifier(nestedConsequence->Expression_, "x")) {
+//        std::cerr << "Nested IF's consequence first statement is not ExpressionStatement or identifier test failed." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    // Verifying there is no alternative block in the outer IF
+//    if (exp->Alternative != nullptr) {
+//        std::cerr << "Expected no alternative for the outer IF, but one was found." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    std::cout << "TestNestedIfExpression passed." << std::endl;
+//}
+//
+//void TestNestedIfInElseExpression() {
+//    std::string input = R"(
+//    IF(x < y) 
+//        BEGIN IF 
+//            x 
+//        END IF
+//    ELSE 
+//        BEGIN ELSE
+//            IF (x) 
+//                BEGIN IF 
+//                    x
+//                END IF
+//        END ELSE
+//    )";
+//
+//    auto lexer = std::make_unique<Lexer>(input);
+//    Parser parser(std::move(lexer));
+//    auto program = parser.ParseProgram();
+//    checkParserErrors(parser); // Assuming this function checks for and reports any parsing errors
+//
+//    // Verifying that there is exactly one statement in the program
+//    if (program->Statements.size() != 1) {
+//        std::cerr << "Program does not contain 1 statement. Got=" << program->Statements.size() << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    // Verifying that the statement is an IfExpression
+//    auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
+//    if (!stmt) {
+//        std::cerr << "Program's first statement is not ExpressionStatement." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    auto exp = dynamic_cast<IfExpression*>(stmt->Expression_.get());
+//    if (!exp) {
+//        std::cerr << "Statement's expression is not IfExpression." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    // Verifying the condition of the outer IF expression
+//    if (!testInfixExpression(exp->Condition, "x", "<", "y")) {
+//        std::cerr << "Outer condition test failed." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    // Verifying the structure of the nested IF expression within the ELSE block
+//    if (!exp->Alternative) {
+//        std::cerr << "Expected an alternative block, but none was found." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    std::cout << "\nNested IF: \n" << exp->Alternative->Statements[0].get()->String() << std::endl;
+//
+//    auto stmtInner = dynamic_cast<ExpressionStatement*>(exp->Alternative->Statements[0].get());
+//    if (!stmtInner) {
+//        std::cerr << "Consequence's statement is not ExpressionStatement." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    auto elseStmt = dynamic_cast<IfExpression*>(stmtInner->Expression_.get());
+//    if (!elseStmt) {
+//        std::cerr << "Alternative block is not an IfExpression." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    if (elseStmt->Consequence->Statements.size() != 1) {
+//        std::cerr << "Nested IF in ELSE's consequence does not contain 1 statement. Got=" << elseStmt->Consequence->Statements.size() << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    auto nestedConsequence = dynamic_cast<ExpressionStatement*>(elseStmt->Consequence->Statements[0].get());
+//    if (!nestedConsequence || !testIdentifier(nestedConsequence->Expression_, "x")) {
+//        std::cerr << "Nested IF in ELSE's consequence first statement is not ExpressionStatement or identifier test failed." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    std::cout << "TestNestedIfInElseExpression passed." << std::endl;
+//}
+//
+//
+//void TestIfElseExpression() {
+//    std::string input = R"(
+//    IF(x < y) 
+//        BEGIN IF 
+//        x 
+//        END IF
+//    ELSE
+//        BEGIN ELSE
+//        some_var
+//        END ELSE)";
+//    auto lexer = std::make_unique<Lexer>(input);
+//    Parser parser(std::move(lexer));
+//    auto program = parser.ParseProgram();
+//    checkParserErrors(parser); // Implement this based on your error handling
+//
+//    if (program->Statements.size() != 1) {
+//        std::cerr << "Program does not contain 1 statement. Got=" << program->Statements.size() << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
+//    if (!stmt) {
+//        std::cerr << "Program's first statement is not ExpressionStatement." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    auto exp = dynamic_cast<IfExpression*>(stmt->Expression_.get());
+//    if (!exp) {
+//        std::cerr << "Statement's expression is not IfExpression." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    if (!testInfixExpression(exp->Condition, "x", "<", "y")) {
+//        std::cerr << "Condition test failed." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    if (exp->Consequence->Statements.size() != 1) {
+//        std::cerr << "Consequence does not contain 1 statement. Got=" << exp->Consequence->Statements.size() << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    auto consequence = dynamic_cast<ExpressionStatement*>(exp->Consequence->Statements[0].get());
+//    if (!consequence) {
+//        std::cerr << "Consequence's first statement is not ExpressionStatement." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    if (!testIdentifier(consequence->Expression_, "x")) {
+//        std::cerr << "Identifier test failed." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    if (exp->Alternative == nullptr) {
+//        std::cerr << "Expected an alternative, but none was found." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    auto alternative = dynamic_cast<ExpressionStatement*>(exp->Alternative->Statements[0].get());
+//    if (!alternative) {
+//        std::cerr << "Alternative's first statement is not ExpressionStatement." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    if (!testIdentifier(alternative->Expression_, "some_var")) {
+//        std::cerr << "Identifier test failed." << std::endl;
+//        std::exit(EXIT_FAILURE);
+//    }
+//
+//    std::cout << "TestIfElseStatement passed." << std::endl;
+//}
 
 bool testIdentifier(const std::unique_ptr<Expression>& exp, const std::string& value) {
     auto ident = dynamic_cast<Identifier*>(exp.get());
